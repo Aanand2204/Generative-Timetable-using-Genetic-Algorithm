@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Final Timetable</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_prior.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h2>Final Timetable 📅</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Timeslot</th>
+                    <th>Monday</th>
+                    <th>Tuesday</th>
+                    <th>Wednesday</th>
+                    <th>Thursday</th>
+                    <th>Friday</th>
+                    <th>Saturday</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for timeslot in timeslots %}
+                <tr>
+                    <td>{{ timeslot }}</td>
+                    {% for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] %}
+                        <td>
+                            {% set entry = timetable.get((day, timeslot), "") %}
+                            {{ entry if entry else "—" }}
+                        </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <button onclick="window.print()">🖨️ Print Timetable</button>
+        <button onclick="window.location.href='/modify_timetable'">Modify</button>
+    </div>
+</body>
+</html>

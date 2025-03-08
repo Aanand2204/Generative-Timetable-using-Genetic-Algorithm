@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modify Timetable</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_prior.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h2>Modify Timetable</h2>
+        <p>Would you like to make any changes to the generated timetable?</p>
+        <button onclick="confirmProceed()">Yes, Modify</button>
+        <button onclick="skipModifications()">No, Finalize</button>
+    </div>
+
+    <div class="container" id="modificationForm" style="display: none;">
+        <h2>Edit Timetable</h2>
+        <form id="modifyForm">
+            <table border="1">
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Day</th>
+                        <th>Timeslot</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in timetable %}
+                    <tr>
+                        <td>
+                            <input type="hidden" name="subject[]" value="{{ entry.subject }}">
+                            {{ entry.subject }}
+                        </td>
+                        <td>
+                            <select name="day[]">
+                                {% for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] %}
+                                    <option value="{{ day }}" {% if entry.day == day %}selected{% endif %}>{{ day }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td>
+                            <select name="timeslot[]">
+                                {% for slot in timeslots %}
+                                    <option value="{{ slot }}" {% if entry.timeslot == slot %}selected{% endif %}>{{ slot }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <button type="submit">Save Changes</button>
+        </form>
+    </div>
+
+    <script>
+        function confirmProceed() {
+            document.querySelector(".container").style.display = "none";
+            document.getElementById("modificationForm").style.display = "block";
+        }
+
+        function skipModifications() {
+            window.location.href = "/final_timetable";
+        }
+
+        document.getElementById("modifyForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+        
+            let timetable = [];
+            let rows = document.querySelectorAll("tbody tr");
+        
+            rows.forEach(row => {
+                let subject = row.querySelector("input[name='subject[]']").value;
+                let day = row.querySelector("select[name='day[]']").value;
+                let timeslot = row.querySelector("select[name='timeslot[]']").value;
+        
+                timetable.push({ subject, day, timeslot });
+            });
+        
+            fetch("/save_modified_timetable", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ timetable: timetable })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    alert("✅ Timetable saved successfully!");
+                    window.location.href = "/final_timetable";
+                } else {
+                    alert("⚠️ " + data.error);
+                }
+            })
+            .catch(error => alert("⚠️ Error saving timetable."));
+        });
+    </script>
+</body>
+</html>

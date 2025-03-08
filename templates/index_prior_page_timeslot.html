@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enter Priorities</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_prior.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h2>Step 1: Enter Subject Priorities</h2>
+        <form id="priorityForm">
+            <label for="class_name">Class Name:</label>
+            <input type="text" id="class_name" name="class_name" required>
+
+            <label for="semester">Semester:</label>
+            <input type="text" id="semester" name="semester" required>
+
+            <div id="priorityInputs">
+                <p>⚠️ Please select a class and semester first.</p>
+            </div>
+
+            <button type="submit">Next</button>
+            <button type="button" onclick="window.location.href='/view_timetable';">📖 View Timetable</button>
+        </form>
+    </div>
+
+
+    <script src="{{ url_for('static', filename='script_prior_page_timeslot.js') }}"></script>
+</body>
+</html>

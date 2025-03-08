@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirm Timetable</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_prior.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h2>Your Generated Timetable 📅</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Timeslot</th>
+                    <th>Monday</th>
+                    <th>Tuesday</th>
+                    <th>Wednesday</th>
+                    <th>Thursday</th>
+                    <th>Friday</th>
+                    <th>Saturday</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in timetable %}
+                <tr>
+                    <td>{{ entry.timeslot }}</td>
+                    <td>{{ entry.subject if entry.day == "Monday" else "—" }}</td>
+                    <td>{{ entry.subject if entry.day == "Tuesday" else "—" }}</td>
+                    <td>{{ entry.subject if entry.day == "Wednesday" else "—" }}</td>
+                    <td>{{ entry.subject if entry.day == "Thursday" else "—" }}</td>
+                    <td>{{ entry.subject if entry.day == "Friday" else "—" }}</td>
+                    <td>{{ entry.subject if entry.day == "Saturday" else "—" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <p>Do you want to modify the timetable?</p>
+        <button onclick="window.location.href='/modify_timetable'">Yes, Modify</button>
+        <button onclick="window.location.href='/final_timetable'">No, Finalize</button>
+    </div>
+</body>
+</html>

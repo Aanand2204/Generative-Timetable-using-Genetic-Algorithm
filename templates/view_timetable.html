@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Timetable</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_prior.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h2>Student Timetable 📅</h2>
+
+        <!-- Selection Form -->
+        <form id="viewTimetableForm">
+            <label for="class_name">Class Name:</label>
+            <input type="text" id="class_name" name="class_name" required>
+
+            <label for="semester">Semester:</label>
+            <input type="text" id="semester" name="semester" required>
+
+            <button type="submit">View Timetable</button>
+        </form>
+
+        <!-- Timetable Display -->
+        <div id="timetableContainer" style="display: none;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Timeslot</th>
+                        <th>Monday</th>
+                        <th>Tuesday</th>
+                        <th>Wednesday</th>
+                        <th>Thursday</th>
+                        <th>Friday</th>
+                        <th>Saturday</th>
+                    </tr>
+                </thead>
+                <tbody id="timetableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById("viewTimetableForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+            
+            let className = document.getElementById("class_name").value.trim();
+            let semester = document.getElementById("semester").value.trim();
+
+            if (!className || !semester) {
+                alert("⚠️ Please enter both Class and Semester.");
+                return;
+            }
+
+            fetch(`/get_timetable?class_name=${className}&semester=${semester}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert("⚠️ " + data.error);
+                        return;
+                    }
+
+                    let timetableBody = document.getElementById("timetableBody");
+                    timetableBody.innerHTML = "";
+                    
+                    let timeslots = data.timeslots;
+                    let timetable = data.timetable;
+
+                    timeslots.forEach(timeslot => {
+                        let row = `<tr><td>${timeslot}</td>`;
+                        ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].forEach(day => {
+                            let subject = timetable[`${day}_${timeslot}`] || "—";
+                            row += `<td>${subject}</td>`;
+                        });
+                        row += `</tr>`;
+                        timetableBody.innerHTML += row;
+                    });
+
+                    document.getElementById("timetableContainer").style.display = "block";
+                })
+                .catch(error => alert("⚠️ Error fetching timetable."));
+        });
+    </script>
+</body>
+</html>
