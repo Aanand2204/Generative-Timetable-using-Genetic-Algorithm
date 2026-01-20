@@ -1,31 +1,54 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enter Priorities</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style_prior.css') }}">
-</head>
-<body>
-    <div class="container">
-        <h2>Step 1: Enter Subject Priorities</h2>
-        <form id="priorityForm">
-            <label for="class_name">Class Name:</label>
-            <input type="text" id="class_name" name="class_name" required>
+{% extends "layout.html" %}
 
-            <label for="semester">Semester:</label>
-            <input type="text" id="semester" name="semester" required>
+{% block title %}Enter Priorities - TimetableGen{% endblock %}
 
-            <div id="priorityInputs">
-                <p>⚠️ Please select a class and semester first.</p>
-            </div>
+{% block content %}
+<h1>Step 1: Enter Subject Priorities</h1>
+<p class="text-light">Define the class details to begin.</p>
 
-            <button type="submit">Next</button>
-            <button type="button" onclick="window.location.href='/view_timetable';">📖 View Timetable</button>
-        </form>
+<form id="priorityForm">
+    <label for="class_name">Class Name:</label>
+    <input type="text" id="class_name" name="class_name" placeholder="e.g. FYBScCS" required>
+
+    <label for="semester">Semester:</label>
+    <input type="text" id="semester" name="semester" placeholder="e.g. 1" required>
+
+    <h3>🕒 Time Configuration</h3>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div>
+            <label for="start_time">Start Time:</label>
+            <input type="time" id="start_time" name="start_time" required>
+        </div>
+        <div>
+            <label for="end_time">End Time:</label>
+            <input type="time" id="end_time" name="end_time" required>
+        </div>
+        <div>
+            <label for="lecture_duration">Lecture Duration (mins):</label>
+            <input type="number" id="lecture_duration" name="lecture_duration" value="60" required>
+        </div>
+        <div>
+            <label for="break_start">Break Start Time:</label>
+            <input type="time" id="break_start" name="break_start">
+        </div>
+        <div>
+            <label for="break_duration">Break Duration (mins):</label>
+            <input type="number" id="break_duration" name="break_duration" value="30">
+        </div>
     </div>
 
+    <div id="priorityInputs" style="margin-top: 1rem; padding: 1rem; background: #f9fafb; border-radius: 0.5rem;">
+        <p>⚠️ Please select a class and semester first.</p>
+    </div>
 
-    <script src="{{ url_for('static', filename='script_prior_page_timeslot.js') }}"></script>
-</body>
-</html>
+    <div style="margin-top: 1.5rem;">
+        <button type="submit">Next</button>
+        <button type="button" class="btn-secondary" onclick="window.location.href='/view_timetable';">📖 View
+            Timetable</button>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='script_prior_page_timeslot.js') }}"></script>
+{% endblock %}

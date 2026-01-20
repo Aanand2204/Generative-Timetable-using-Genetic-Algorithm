@@ -1,0 +1,44 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container" style="max-width: 900px; margin: 2rem auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h2 style="color: var(--primary); margin: 0;">Manage Teachers</h2>
+        <a href="{{ url_for('main.dashboard') }}" class="button"
+            style="background-color: transparent; color: var(--text); border: 1px solid #d1d5db;">Back to Dashboard</a>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; align-items: start;">
+        <!-- Add Teacher Form -->
+        <div class="card">
+            <h3 style="margin-bottom: 1rem;">Add Teacher</h3>
+            <form action="{{ url_for('main.manage_teachers') }}" method="POST">
+                <label for="teacher_name">Name:</label>
+                <input type="text" id="teacher_name" name="teacher_name" required>
+
+                <button type="submit" class="w-full">Add Teacher</button>
+            </form>
+        </div>
+
+        <!-- Teacher List -->
+        <div class="card">
+            <h3 style="margin-bottom: 1rem;">Existing Teachers</h3>
+            {% if teachers %}
+            <ul style="list-style: none; padding: 0;">
+                {% for teacher in teachers %}
+                <li
+                    style="padding: 1rem; border-bottom: 1px solid #f3f4f6; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <span style="font-weight: 600; font-size: 1.1rem;">{{ teacher.teacher_name }}</span>
+                    </div>
+                    <!-- We could edit delete buttons here later -->
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p style="color: #6b7280;">No teachers added yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

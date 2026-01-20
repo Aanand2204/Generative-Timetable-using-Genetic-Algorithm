@@ -1,0 +1,71 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container" style="max-width: 600px; margin: 2rem auto;">
+    <div class="card">
+        <h2 style="text-align: center; color: var(--primary);">Register School</h2>
+        <p style="text-align: center; color: #6b7280; margin-bottom: 1.5rem;">Join to manage your timetable effectively.
+        </p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div
+            style="padding: 1rem; margin-bottom: 1rem; border-radius: 0.5rem; background: {{ '#fee2e2' if category == 'error' else '#d1fae5' }}; color: {{ '#b91c1c' if category == 'error' else '#065f46' }};">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <form action="{{ url_for('auth.register') }}" method="POST" style="display: grid; gap: 1rem;">
+            <!-- Credentials -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div>
+                    <label for="school_name">School Name:</label>
+                    <input type="text" id="school_name" name="school_name" required>
+                </div>
+                <div>
+                    <label for="username">Username:</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+            </div>
+            <div>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 0.5rem 0;">
+            <h3 style="font-size: 1.1rem; color: #374151;">Time Configuration</h3>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div>
+                    <label for="start_time">Start Time:</label>
+                    <input type="time" id="start_time" name="start_time" required>
+                </div>
+                <div>
+                    <label for="end_time">End Time:</label>
+                    <input type="time" id="end_time" name="end_time" required>
+                </div>
+                <div>
+                    <label for="lecture_duration">Lecture Duration (mins):</label>
+                    <input type="number" id="lecture_duration" name="lecture_duration" value="60" required>
+                </div>
+                <div>
+                    <label for="break_start">Break Start Time:</label>
+                    <input type="time" id="break_start" name="break_start">
+                </div>
+                <div>
+                    <label for="break_duration">Break Duration (mins):</label>
+                    <input type="number" id="break_duration" name="break_duration" value="30">
+                </div>
+            </div>
+
+            <button type="submit" class="w-full">Register & Setup</button>
+        </form>
+        <p style="text-align: center; margin-top: 1rem;">
+            Already have an account? <a href="{{ url_for('auth.login') }}">Login</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

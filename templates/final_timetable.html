@@ -1,42 +1,55 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Final Timetable</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style_prior.css') }}">
-</head>
-<body>
-    <div class="container">
-        <h2>Final Timetable 📅</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Timeslot</th>
-                    <th>Monday</th>
-                    <th>Tuesday</th>
-                    <th>Wednesday</th>
-                    <th>Thursday</th>
-                    <th>Friday</th>
-                    <th>Saturday</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for timeslot in timeslots %}
-                <tr>
-                    <td>{{ timeslot }}</td>
-                    {% for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] %}
-                        <td>
-                            {% set entry = timetable.get((day, timeslot), "") %}
-                            {{ entry if entry else "—" }}
-                        </td>
-                    {% endfor %}
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        <button onclick="window.print()">🖨️ Print Timetable</button>
-        <button onclick="window.location.href='/modify_timetable'">Modify</button>
+{% extends "layout.html" %}
+
+{% block title %}Final Timetable - TimetableGen{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+    <h1>Final Timetable 📅</h1>
+    <div>
+        <button onclick="window.print()">🖨️ Print</button>
+        <button class="btn-secondary" onclick="window.location.href='/modify_timetable'">Modify</button>
     </div>
-</body>
-</html>
+</div>
+
+<div style="overflow-x: auto;">
+    <table>
+        <thead>
+            <tr>
+                <th>Timeslot</th>
+                <th>Monday</th>
+                <th>Tuesday</th>
+                <th>Wednesday</th>
+                <th>Thursday</th>
+                <th>Friday</th>
+                <th>Saturday</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in timeslots %}
+            <tr>
+                {% if entry.type == 'break' %}
+                <td style="font-weight: bold; background-color: #f3f4f6;">{{ entry.time }}</td>
+                <td colspan="6"
+                    style="font-weight: bold; background-color: #f3f4f6; text-align: center; color: #6b7280; letter-spacing: 2px;">
+                    BREAK
+                </td>
+                {% else %}
+                <td style="font-weight: 500;">{{ entry.time }}</td>
+                {% for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] %}
+                <td>
+                    {% if timetable.get((day, entry.time)) %}
+                    <span
+                        style="display: inline-block; padding: 0.25rem 0.5rem; background: #e0e7ff; color: #4338ca; border-radius: 0.25rem; font-size: 0.875rem;">{{
+                        timetable[(day, entry.time)] }}</span>
+                    {% else %}
+                    <span style="color: #9ca3af;">—</span>
+                    {% endif %}
+                </td>
+                {% endfor %}
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

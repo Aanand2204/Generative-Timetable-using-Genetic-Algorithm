@@ -1,0 +1,46 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container" style="max-width: 800px; margin: 2rem auto;">
+    <header style="text-align: center; margin-bottom: 3rem;">
+        <h1 style="color: var(--primary);">Welcome, {{ session['school_name'] }}</h1>
+        <p style="color: #6b7280;">Manage your school's data and generate timetables.</p>
+    </header>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+        <!-- Manage Teachers -->
+        <a href="{{ url_for('main.manage_teachers') }}" class="card"
+            style="text-decoration: none; color: inherit; transition: transform 0.2s;"
+            onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="text-align: center;">
+                <span style="font-size: 3rem; display: block; margin-bottom: 1rem;">👨‍🏫</span>
+                <h3 style="margin-bottom: 0.5rem; color: var(--primary);">Teachers</h3>
+                <p style="color: #6b7280; font-size: 0.9rem;">Add and manage teachers and their qualifications.</p>
+            </div>
+        </a>
+
+        <!-- Manage Subjects/Classes -->
+        <a href="{{ url_for('main.manage_subjects') }}" class="card"
+            style="text-decoration: none; color: inherit; transition: transform 0.2s;"
+            onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="text-align: center;">
+                <span style="font-size: 3rem; display: block; margin-bottom: 1rem;">📚</span>
+                <h3 style="margin-bottom: 0.5rem; color: var(--primary);">Subjects</h3>
+                <p style="color: #6b7280; font-size: 0.9rem;">Add courses, classes, and assign subjects.</p>
+            </div>
+        </a>
+
+        <!-- Generate Timetable -->
+        <!-- For now, we point to the old Setup (index_prior) but we will need to refactor it to pull from DB -->
+        <a href="{{ url_for('main.generate_setup') }}" class="card"
+            style="text-decoration: none; color: inherit; transition: transform 0.2s;"
+            onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="text-align: center;">
+                <span style="font-size: 3rem; display: block; margin-bottom: 1rem;">📅</span>
+                <h3 style="margin-bottom: 0.5rem; color: var(--primary);">Generate</h3>
+                <p style="color: #6b7280; font-size: 0.9rem;">Create a new timetable for a specific class.</p>
+            </div>
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,86 +1,113 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>View Timetable</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style_prior.css') }}">
-</head>
-<body>
-    <div class="container">
-        <h2>Student Timetable 📅</h2>
+{% extends "layout.html" %}
 
-        <!-- Selection Form -->
-        <form id="viewTimetableForm">
-            <label for="class_name">Class Name:</label>
-            <input type="text" id="class_name" name="class_name" required>
+{% block title %}View Timetable - TimetableGen{% endblock %}
 
-            <label for="semester">Semester:</label>
-            <input type="text" id="semester" name="semester" required>
+{% block content %}
+<h1>Student Timetable 📅</h1>
+<p class="text-light">Search for a class timetable.</p>
 
-            <button type="submit">View Timetable</button>
-        </form>
+<!-- Selection Form -->
+<form id="viewTimetableForm">
+    <label for="class_name">Class Name:</label>
+    <input type="text" id="class_name" name="class_name" placeholder="e.g. FYBScCS" required>
 
-        <!-- Timetable Display -->
-        <div id="timetableContainer" style="display: none;">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Timeslot</th>
-                        <th>Monday</th>
-                        <th>Tuesday</th>
-                        <th>Wednesday</th>
-                        <th>Thursday</th>
-                        <th>Friday</th>
-                        <th>Saturday</th>
-                    </tr>
-                </thead>
-                <tbody id="timetableBody">
-                </tbody>
-            </table>
-        </div>
+    <label for="semester">Semester:</label>
+    <input type="text" id="semester" name="semester" placeholder="e.g. 1" required>
+
+    <div style="margin-top: 1.5rem;">
+        <button type="submit">View Timetable</button>
     </div>
+</form>
 
-    <script>
-        document.getElementById("viewTimetableForm").addEventListener("submit", function(event) {
-            event.preventDefault();
-            
-            let className = document.getElementById("class_name").value.trim();
-            let semester = document.getElementById("semester").value.trim();
+<!-- Timetable Display -->
+<div id="timetableContainer" style="display: none; margin-top: 2rem;">
+    <div style="overflow-x: auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Timeslot</th>
+                    <th>Monday</th>
+                    <th>Tuesday</th>
+                    <th>Wednesday</th>
+                    <th>Thursday</th>
+                    <th>Friday</th>
+                    <th>Saturday</th>
+                </tr>
+            </thead>
+            <tbody id="timetableBody">
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
 
-            if (!className || !semester) {
-                alert("⚠️ Please enter both Class and Semester.");
-                return;
-            }
+{% block scripts %}
+<script>
+    document.getElementById("viewTimetableForm").addEventListener("submit", function (event) {
+        event.preventDefault();
 
-            fetch(`/get_timetable?class_name=${className}&semester=${semester}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        alert("⚠️ " + data.error);
-                        return;
+        let className = document.getElementById("class_name").value.trim();
+        let semester = document.getElementById("semester").value.trim();
+
+        if (!className || !semester) {
+            alert("⚠️ Please enter both Class and Semester.");
+            return;
+        }
+
+        fetch(`/get_timetable?class_name=${className}&semester=${semester}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert("⚠️ " + data.error);
+                    return;
+                }
+
+                let timetableBody = document.getElementById("timetableBody");
+                timetableBody.innerHTML = "";
+
+                // Assuming data.visual_slots is the new structure for timeslots
+                // And data.timetable still holds the subject data
+                let visualSlots = data.visual_slots;
+                let timetable = data.timetable;
+                let days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+                visualSlots.forEach(slot => {
+                    let row = document.createElement('tr');
+
+                    // Check if it's a break
+                    if (slot.type === 'break') {
+                        row.innerHTML = `
+                            <td style="font-weight: bold; background-color: #f3f4f6;">${slot.time}</td>
+                            <td colspan="6" style="font-weight: bold; background-color: #f3f4f6; text-align: center; color: #6b7280; letter-spacing: 2px;">
+                                BREAK
+                            </td>
+                        `;
+                    } else {
+                        // Normal Lecture Slot
+                        let timeCell = document.createElement('td');
+                        timeCell.textContent = slot.time;
+                        timeCell.style.fontWeight = "500"; // Keep original style for time cell
+                        row.appendChild(timeCell);
+
+                        days.forEach(day => {
+                            let cell = document.createElement('td');
+                            let key = `${day}_${slot.time}`;
+                            let subject = timetable[key] || "";
+                            if (subject) {
+                                cell.innerHTML = `<span style="display: inline-block; padding: 0.25rem 0.5rem; background: #e0e7ff; color: #4338ca; border-radius: 0.25rem; font-size: 0.875rem;">${subject}</span>`;
+                            } else {
+                                cell.innerHTML = '<span style="color: #9ca3af;">—</span>';
+                            }
+                            row.appendChild(cell);
+                        });
                     }
 
-                    let timetableBody = document.getElementById("timetableBody");
-                    timetableBody.innerHTML = "";
-                    
-                    let timeslots = data.timeslots;
-                    let timetable = data.timetable;
+                    timetableBody.appendChild(row);
+                });
 
-                    timeslots.forEach(timeslot => {
-                        let row = `<tr><td>${timeslot}</td>`;
-                        ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].forEach(day => {
-                            let subject = timetable[`${day}_${timeslot}`] || "—";
-                            row += `<td>${subject}</td>`;
-                        });
-                        row += `</tr>`;
-                        timetableBody.innerHTML += row;
-                    });
-
-                    document.getElementById("timetableContainer").style.display = "block";
-                })
-                .catch(error => alert("⚠️ Error fetching timetable."));
-        });
-    </script>
-</body>
-</html>
+                document.getElementById("timetableContainer").style.display = "block";
+            })
+            .catch(error => alert("⚠️ Error fetching timetable."));
+    });
+</script>
+{% endblock %}

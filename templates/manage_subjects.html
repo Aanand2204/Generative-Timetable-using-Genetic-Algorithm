@@ -1,0 +1,122 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container" style="max-width: 1000px; margin: 2rem auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h2 style="color: var(--primary); margin: 0;">Manage Subjects & Classes</h2>
+        <a href="{{ url_for('main.dashboard') }}" class="button"
+            style="background-color: transparent; color: var(--text); border: 1px solid #d1d5db;">Back to Dashboard</a>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; align-items: start;">
+
+        <!-- Left Column: Add Class & Classes List -->
+        <div style="display: flex; flex-direction: column; gap: 2rem;">
+            <!-- Add Class -->
+            <div class="card">
+                <h3 style="margin-bottom: 1rem;">Add Class</h3>
+                <form action="{{ url_for('main.manage_subjects') }}" method="POST">
+                    <input type="hidden" name="action" value="add_class">
+                    <label for="class_name">Class Name (e.g. FY, SY):</label>
+                    <input type="text" id="class_name" name="class_name" required>
+                    <button type="submit" class="w-full">Add Class</button>
+                </form>
+            </div>
+
+            <!-- Existing Classes -->
+            <div class="card">
+                <h3 style="margin-bottom: 1rem;">Existing Classes</h3>
+                <ul style="list-style: none; padding: 0;">
+                    {% for cls in classes %}
+                    <li style="padding: 0.5rem; border-bottom: 1px solid #f3f4f6;">
+                        {{ cls.class_name }}
+                    </li>
+                    {% else %}
+                    <li style="color: #6b7280;">No classes added.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- Right Column: Add Subject & Subjects List -->
+        <div style="display: flex; flex-direction: column; gap: 2rem;">
+            <!-- Add Subject -->
+            <div class="card">
+                <h3 style="margin-bottom: 1rem;">Add Subject</h3>
+                <form action="{{ url_for('main.manage_subjects') }}" method="POST"
+                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <input type="hidden" name="action" value="add_subject">
+
+                    <div style="grid-column: span 2;">
+                        <label for="subject_name">Subject Name:</label>
+                        <input type="text" id="subject_name" name="subject_name" required>
+                    </div>
+
+                    <div>
+                        <label for="class_id">Class:</label>
+                        <select id="class_id" name="class_id" required>
+                            <option value="">Select Class</option>
+                            {% for cls in classes %}
+                            <option value="{{ cls.class_id }}">{{ cls.class_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="semester">Semester:</label>
+                        <input type="number" id="semester" name="semester" required min="1" max="8">
+                    </div>
+
+                    <div>
+                        <label for="teacher_id">Teacher:</label>
+                        <select id="teacher_id" name="teacher_id" required>
+                            <option value="">Select Teacher</option>
+                            {% for teacher in teachers %}
+                            <option value="{{ teacher.teacher_id }}">{{ teacher.teacher_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="credits">Credits:</label>
+                        <input type="number" id="credits" name="credits" required min="1" max="5" value="4">
+                    </div>
+
+                    <div style="grid-column: span 2;">
+                        <button type="submit" class="w-full">Add Subject</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Existing Subjects -->
+            <div class="card">
+                <h3 style="margin-bottom: 1rem;">Existing Subjects</h3>
+                {% if subjects %}
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="text-align: left; border-bottom: 2px solid #f3f4f6;">
+                            <th style="padding: 0.5rem;">Subject</th>
+                            <th style="padding: 0.5rem;">Class</th>
+                            <th style="padding: 0.5rem;">Teacher</th>
+                            <th style="padding: 0.5rem;">Sem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sub in subjects %}
+                        <tr style="border-bottom: 1px solid #f3f4f6;">
+                            <td style="padding: 0.5rem; font-weight: 500;">{{ sub.subject_name }}</td>
+                            <td style="padding: 0.5rem;">{{ sub.class_name }}</td>
+                            <td style="padding: 0.5rem;">{{ sub.teacher_name }}</td>
+                            <td style="padding: 0.5rem;">{{ sub.semester }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p style="color: #6b7280;">No subjects added yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

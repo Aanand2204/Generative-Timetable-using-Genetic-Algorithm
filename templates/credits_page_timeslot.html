@@ -1,32 +1,32 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enter Credits</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style_prior.css') }}">
-</head>
-<body>
-    <div class="container">
-        <h2>Step 2: Enter Subject Credits</h2>
-        <form id="creditsForm">
-            <div id="creditInputs"></div>
-            <button type="submit">Generate Timetable</button>
-        </form>
+{% extends "layout.html" %}
+
+{% block title %}Enter Credits - TimetableGen{% endblock %}
+
+{% block content %}
+<h1>Step 2: Enter Subject Credits</h1>
+<p class="text-light">Assign credit hours to each subject.</p>
+
+<form id="creditsForm">
+    <div id="creditInputs"></div>
+    <div style="margin-top: 1.5rem;">
+        <button type="submit">Generate Timetable</button>
     </div>
+</form>
+{% endblock %}
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            let className = sessionStorage.getItem("class_name");
-            let semester = sessionStorage.getItem("semester");
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        let className = sessionStorage.getItem("class_name");
+        let semester = sessionStorage.getItem("semester");
 
-            if (!className || !semester) {
-                alert("⚠️ Missing class name or semester. Redirecting...");
-                window.location.href = "/";
-                return;
-            }
+        if (!className || !semester) {
+            alert("⚠️ Missing class name or semester. Redirecting...");
+            window.location.href = "/";
+            return;
+        }
 
-            fetch(`/subjects?class_name=${className}&semester=${semester}`)
+        fetch(`/subjects?class_name=${className}&semester=${semester}`)
             .then(response => response.json())
             .then(subjects => {
                 let creditInputsDiv = document.getElementById("creditInputs");
@@ -34,37 +34,37 @@
 
                 subjects.forEach(subject => {
                     let inputField = `
-                        <label>${subject}:</label>
-                        <input type="number" name="${subject}-credits" class="credit-input" min="1" required>
-                        <br>`;
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display:block; margin-bottom: 0.5rem;">${subject}:</label>
+                            <input type="number" name="${subject}-credits" class="credit-input" min="1" required>
+                        </div>`;
                     creditInputsDiv.innerHTML += inputField;
                 });
             });
 
-            document.getElementById("creditsForm").addEventListener("submit", function(event) {
-                event.preventDefault();
-                let credits = {};
-                document.querySelectorAll(".credit-input").forEach(input => {
-                    let subjectName = input.name.replace("-credits", "").trim();
-                    credits[subjectName] = parseInt(input.value, 10);
-                });
+        document.getElementById("creditsForm").addEventListener("submit", function (event) {
+            event.preventDefault();
+            let credits = {};
+            document.querySelectorAll(".credit-input").forEach(input => {
+                let subjectName = input.name.replace("-credits", "").trim();
+                credits[subjectName] = parseInt(input.value, 10);
+            });
 
-                fetch("/generate", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ class_name: className, semester: semester, credits: credits })
-                })
+            fetch("/generate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ class_name: className, semester: semester, credits: credits })
+            })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        alert("✅ Timetable generated successfully!");
+                        //alert("✅ Timetable generated successfully!"); // Optional: Remove alert for smoother flow
                         window.location.href = "/final_timetable";
                     } else {
                         alert("⚠️ " + data.error);
                     }
                 });
-            });
         });
-    </script>
-</body>
-</html>
+    });
+</script>
+{% endblock %}

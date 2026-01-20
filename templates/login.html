@@ -1,0 +1,33 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container" style="max-width: 500px; margin: 4rem auto;">
+    <div class="card">
+        <h2 style="text-align: center; color: var(--primary);">Login</h2>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div
+            style="padding: 1rem; margin-bottom: 1rem; border-radius: 0.5rem; background: {{ '#fee2e2' if category == 'error' else '#d1fae5' }}; color: {{ '#b91c1c' if category == 'error' else '#065f46' }};">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <form action="{{ url_for('auth.login') }}" method="POST">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required>
+
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+
+            <button type="submit" class="w-full">Login</button>
+        </form>
+        <p style="text-align: center; margin-top: 1rem;">
+            New to TimetableGen? <a href="{{ url_for('auth.register') }}">Register School</a>
+        </p>
+    </div>
+</div>
+{% endblock %}
