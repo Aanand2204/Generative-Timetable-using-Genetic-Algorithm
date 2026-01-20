@@ -1,0 +1,42 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div style="text-align: center; margin-top: 4rem;">
+    <h1 style="font-size: 3rem; color: var(--primary); margin-bottom: 1rem;">Smart Timetable Generator</h1>
+    <p style="font-size: 1.2rem; color: #4b5563; max-width: 600px; margin: 0 auto 3rem auto;">
+        Automate your school's scheduling with our genetic algorithm-powered timetable generator.
+        Create conflict-free schedules in minutes.
+    </p>
+
+    <div style="display: flex; gap: 1rem; justify-content: center;">
+        {% if session.get('school_id') %}
+        <a href="{{ url_for('main.dashboard') }}" class="button" style="padding: 1rem 2rem; font-size: 1.1rem;">Go to
+            Dashboard</a>
+        {% else %}
+        <a href="{{ url_for('auth.login') }}" class="button" style="padding: 1rem 2rem; font-size: 1.1rem;">Login</a>
+        <a href="{{ url_for('auth.register') }}" class="button"
+            style="background-color: white; color: var(--primary); border: 2px solid var(--primary); padding: 1rem 2rem; font-size: 1.1rem;">Register
+            School</a>
+        {% endif %}
+    </div>
+
+    <div
+        style="margin-top: 4rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
+        <div class="card">
+            <span style="font-size: 2.5rem; display: block; margin-bottom: 0.5rem;">⚡</span>
+            <h3 style="margin-bottom: 0.5rem;">Fast Generation</h3>
+            <p style="color: #6b7280;">Generate complex timetables in seconds using advanced algorithms.</p>
+        </div>
+        <div class="card">
+            <span style="font-size: 2.5rem; display: block; margin-bottom: 0.5rem;">📝</span>
+            <h3 style="margin-bottom: 0.5rem;">Easy Management</h3>
+            <p style="color: #6b7280;">Manage teachers, subjects, and classes with a simple interface.</p>
+        </div>
+        <div class="card">
+            <span style="font-size: 2.5rem; display: block; margin-bottom: 0.5rem;">🛠️</span>
+            <h3 style="margin-bottom: 0.5rem;">Customizable</h3>
+            <p style="color: #6b7280;">Configure school timings, breaks, and constraints to fit your needs.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

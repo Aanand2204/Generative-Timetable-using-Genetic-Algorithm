@@ -5,28 +5,37 @@ CREATE TABLE `allocated_timeslots` (
   `teacher_id` int NOT NULL,
   `subject_id` int NOT NULL,
   `time_id` int NOT NULL,
+  `school_id` int NOT NULL,
   PRIMARY KEY (`allocation_id`),
   KEY `time_id` (`time_id`),
   KEY `teacher_id` (`teacher_id`),
   KEY `subject_id` (`subject_id`),
+  KEY `school_id` (`school_id`),
   CONSTRAINT `allocated_timeslots_ibfk_1` FOREIGN KEY (`time_id`) REFERENCES `timeslot` (`time_id`),
   CONSTRAINT `allocated_timeslots_ibfk_2` FOREIGN KEY (`teacher_id`) REFERENCES `teacher` (`teacher_id`),
-  CONSTRAINT `allocated_timeslots_ibfk_3` FOREIGN KEY (`subject_id`) REFERENCES `subject` (`subject_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  CONSTRAINT `allocated_timeslots_ibfk_3` FOREIGN KEY (`subject_id`) REFERENCES `subject` (`subject_id`),
+  CONSTRAINT `allocated_timeslots_ibfk_4` FOREIGN KEY (`school_id`) REFERENCES `schools` (`school_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --- TABLE: class ---
 CREATE TABLE `class` (
   `class_id` int NOT NULL AUTO_INCREMENT,
-  `class_name` enum('FY','SY','TY') NOT NULL,
-  PRIMARY KEY (`class_id`)
+  `class_name` varchar(20) NOT NULL,
+  `school_id` int NOT NULL,
+  PRIMARY KEY (`class_id`),
+  KEY `school_id` (`school_id`),
+  CONSTRAINT `class_ibfk_1` FOREIGN KEY (`school_id`) REFERENCES `schools` (`school_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --- TABLE: course ---
 CREATE TABLE `course` (
   `course_id` int NOT NULL AUTO_INCREMENT,
   `course_name` varchar(20) NOT NULL,
-  PRIMARY KEY (`course_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `school_id` int NOT NULL,
+  PRIMARY KEY (`course_id`),
+  KEY `school_id` (`school_id`),
+  CONSTRAINT `course_ibfk_1` FOREIGN KEY (`school_id`) REFERENCES `schools` (`school_id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --- TABLE: practical ---
 CREATE TABLE `practical` (
@@ -35,13 +44,16 @@ CREATE TABLE `practical` (
   `time_id` int NOT NULL,
   `room_id` int NOT NULL,
   `class_id` int NOT NULL,
+  `school_id` int NOT NULL,
   PRIMARY KEY (`practical_id`),
   KEY `time_id` (`time_id`),
   KEY `room_id` (`room_id`),
   KEY `class_id` (`class_id`),
+  KEY `school_id` (`school_id`),
   CONSTRAINT `practical_ibfk_1` FOREIGN KEY (`time_id`) REFERENCES `timeslot` (`time_id`),
   CONSTRAINT `practical_ibfk_2` FOREIGN KEY (`room_id`) REFERENCES `room` (`room_id`),
-  CONSTRAINT `practical_ibfk_3` FOREIGN KEY (`class_id`) REFERENCES `class` (`class_id`)
+  CONSTRAINT `practical_ibfk_3` FOREIGN KEY (`class_id`) REFERENCES `class` (`class_id`),
+  CONSTRAINT `practical_ibfk_4` FOREIGN KEY (`school_id`) REFERENCES `schools` (`school_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --- TABLE: room ---
@@ -49,36 +61,57 @@ CREATE TABLE `room` (
   `room_id` int NOT NULL AUTO_INCREMENT,
   `room_name` varchar(20) NOT NULL,
   `room_type` enum('practical','lecture') NOT NULL,
-  PRIMARY KEY (`room_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `school_id` int NOT NULL,
+  PRIMARY KEY (`room_id`),
+  KEY `school_id` (`school_id`),
+  CONSTRAINT `room_ibfk_1` FOREIGN KEY (`school_id`) REFERENCES `schools` (`school_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--- TABLE: schools ---
+CREATE TABLE `schools` (
+  `school_id` int NOT NULL AUTO_INCREMENT,
+  `school_name` varchar(100) NOT NULL,
+  `username` varchar(50) NOT NULL,
+  `password_hash` varchar(255) NOT NULL,
+  `start_time` varchar(10) DEFAULT NULL,
+  `end_time` varchar(10) DEFAULT NULL,
+  `lecture_duration` int DEFAULT NULL,
+  `break_start_time` varchar(10) DEFAULT NULL,
+  `break_duration` int DEFAULT NULL,
+  PRIMARY KEY (`school_id`),
+  UNIQUE KEY `username` (`username`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --- TABLE: subject ---
 CREATE TABLE `subject` (
-  `subject_id` int NOT NULL,
+  `subject_id` int NOT NULL AUTO_INCREMENT,
   `subject_name` varchar(20) NOT NULL,
   `class_id` int NOT NULL,
   `course_id` int NOT NULL,
   `teacher_id` int NOT NULL,
   `semester` int NOT NULL,
+  `credits` int DEFAULT '4',
+  `school_id` int NOT NULL,
   PRIMARY KEY (`subject_id`),
   KEY `class_id` (`class_id`),
   KEY `course_id` (`course_id`),
   KEY `teacher_id` (`teacher_id`),
+  KEY `school_id` (`school_id`),
   CONSTRAINT `subject_ibfk_1` FOREIGN KEY (`class_id`) REFERENCES `class` (`class_id`),
   CONSTRAINT `subject_ibfk_2` FOREIGN KEY (`course_id`) REFERENCES `course` (`course_id`),
-  CONSTRAINT `subject_ibfk_3` FOREIGN KEY (`teacher_id`) REFERENCES `teacher` (`teacher_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  CONSTRAINT `subject_ibfk_3` FOREIGN KEY (`teacher_id`) REFERENCES `teacher` (`teacher_id`),
+  CONSTRAINT `subject_ibfk_4` FOREIGN KEY (`school_id`) REFERENCES `schools` (`school_id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --- TABLE: teacher ---
 CREATE TABLE `teacher` (
   `teacher_id` int NOT NULL AUTO_INCREMENT,
-  `teacher_name` varchar(20) NOT NULL,
-  `qualification` varchar(20) NOT NULL,
-  `designation` enum('permanent','consolodated','visiting') NOT NULL,
-  `contact_no` bigint NOT NULL,
-  `address` varchar(50) NOT NULL,
-  PRIMARY KEY (`teacher_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=110 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `teacher_name` varchar(100) NOT NULL,
+  `school_id` int NOT NULL,
+  PRIMARY KEY (`teacher_id`),
+  KEY `school_id` (`school_id`),
+  CONSTRAINT `teacher_ibfk_1` FOREIGN KEY (`school_id`) REFERENCES `schools` (`school_id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --- TABLE: timeslot ---
 CREATE TABLE `timeslot` (
@@ -86,7 +119,7 @@ CREATE TABLE `timeslot` (
   `timeslot` time NOT NULL,
   `type_of_class` enum('lecture','practical') NOT NULL,
   PRIMARY KEY (`time_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --- TABLE: timetable ---
 CREATE TABLE `timetable` (
@@ -97,5 +130,8 @@ CREATE TABLE `timetable` (
   `course_id` int NOT NULL,
   `time_id` int NOT NULL,
   `day` varchar(15) DEFAULT NULL,
-  PRIMARY KEY (`timetable_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=894 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `school_id` int NOT NULL,
+  PRIMARY KEY (`timetable_id`),
+  KEY `school_id` (`school_id`),
+  CONSTRAINT `timetable_ibfk_1` FOREIGN KEY (`school_id`) REFERENCES `schools` (`school_id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=118 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

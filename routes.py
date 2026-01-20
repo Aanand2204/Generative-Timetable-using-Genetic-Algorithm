@@ -1,5 +1,5 @@
 
-from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for
+from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for, flash
 from datetime import datetime, timedelta
 from database import connect_db, fetch_data, get_timetable_by_class
 from algorithms import genetic_algorithm
@@ -16,6 +16,10 @@ def login_required(f):
     return decorated_function
 
 @main_bp.route('/')
+def index():
+    return render_template('index.html')
+
+@main_bp.route('/dashboard')
 @login_required
 def dashboard():
     return render_template('dashboard.html')
@@ -26,24 +30,60 @@ def manage_teachers():
     db = connect_db()
     cursor = db.cursor(dictionary=True)
     
+    edit_teacher = None
+    
     if request.method == 'POST':
-        try:
+        action = request.form.get('action')
+        
+        if action == 'delete':
+            teacher_id = request.form.get('teacher_id')
+            try:
+                # Cascade DELETE: 
+                # 1. Remove from timetable
+                cursor.execute("DELETE FROM timetable WHERE teacher_id = %s AND school_id = %s", (teacher_id, session['school_id']))
+                # 2. Remove from allocated_timeslots (if applicable)
+                cursor.execute("DELETE FROM allocated_timeslots WHERE teacher_id = %s AND school_id = %s", (teacher_id, session['school_id']))
+                # 3. Remove assigned subjects (Constraint causing the issue)
+                cursor.execute("DELETE FROM subject WHERE teacher_id = %s AND school_id = %s", (teacher_id, session['school_id']))
+                # 4. Finally delete the teacher
+                cursor.execute("DELETE FROM teacher WHERE teacher_id = %s AND school_id = %s", (teacher_id, session['school_id']))
+                
+                db.commit()
+                flash('Teacher and their assigned subjects deleted successfully!', 'success')
+            except Exception as e:
+                flash(f'Error deleting teacher: {str(e)}', 'error')
+                
+        elif action == 'update':
+            teacher_id = request.form.get('teacher_id')
             name = request.form.get('teacher_name')
-            
-            cursor.execute("""
-                INSERT INTO teacher (teacher_name, school_id)
-                VALUES (%s, %s)
-            """, (name, session['school_id']))
-            db.commit()
-            # flash('Teacher added successfully!', 'success')
-        except Exception as e:
-            # flash(f'Error: {str(e)}', 'error')
-            pass
+            try:
+                cursor.execute("UPDATE teacher SET teacher_name = %s WHERE teacher_id = %s AND school_id = %s", (name, teacher_id, session['school_id']))
+                db.commit()
+                flash('Teacher updated successfully!', 'success')
+                return redirect(url_for('main.manage_teachers'))
+            except Exception as e:
+                flash(f'Error updating teacher: {str(e)}', 'error')
+
+        else: # Add
+            try:
+                name = request.form.get('teacher_name')
+                if name:
+                    cursor.execute("INSERT INTO teacher (teacher_name, school_id) VALUES (%s, %s)", (name, session['school_id']))
+                    db.commit()
+                    flash('Teacher added successfully!', 'success')
+            except Exception as e:
+                flash(f'Error adding teacher: {str(e)}', 'error')
+
+    # GET: Check for edit_id
+    edit_id = request.args.get('edit_id')
+    if edit_id:
+        cursor.execute("SELECT * FROM teacher WHERE teacher_id = %s AND school_id = %s", (edit_id, session['school_id']))
+        edit_teacher = cursor.fetchone()
             
     cursor.execute("SELECT * FROM teacher WHERE school_id = %s", (session['school_id'],))
     teachers = cursor.fetchall()
     db.close()
-    return render_template('manage_teachers.html', teachers=teachers)
+    return render_template('manage_teachers.html', teachers=teachers, edit_teacher=edit_teacher)
 
 @main_bp.route('/manage_subjects', methods=['GET', 'POST'])
 @login_required
@@ -61,14 +101,35 @@ def manage_subjects():
         course_id = cursor.lastrowid
     else:
         course_id = course['course_id']
+        
+    edit_class = None
+    edit_subject = None
 
     if request.method == 'POST':
         action = request.form.get('action')
         try:
             if action == 'add_class':
                 class_name = request.form.get('class_name')
-                cursor.execute("INSERT INTO class (class_name, school_id) VALUES (%s, %s)", (class_name, school_id))
+                if class_name:
+                    cursor.execute("INSERT INTO class (class_name, school_id) VALUES (%s, %s)", (class_name, school_id))
+                    db.commit()
+                    flash('Class added successfully!', 'success')
+            
+            elif action == 'update_class':
+                class_id = request.form.get('class_id')
+                class_name = request.form.get('class_name')
+                cursor.execute("UPDATE class SET class_name = %s WHERE class_id = %s AND school_id = %s", (class_name, class_id, school_id))
                 db.commit()
+                flash('Class updated successfully!', 'success')
+                return redirect(url_for('main.manage_subjects'))
+
+            elif action == 'delete_class':
+                class_id = request.form.get('class_id')
+                # Manual cascade delete for subjects
+                cursor.execute("DELETE FROM subject WHERE class_id = %s AND school_id = %s", (class_id, school_id))
+                cursor.execute("DELETE FROM class WHERE class_id = %s AND school_id = %s", (class_id, school_id))
+                db.commit()
+                flash('Class and its subjects deleted successfully!', 'success')
             
             elif action == 'add_subject':
                 subject_name = request.form.get('subject_name')
@@ -82,9 +143,45 @@ def manage_subjects():
                     VALUES (%s, %s, %s, %s, %s, %s, %s)
                 """, (subject_name, class_id, course_id, teacher_id, semester, credits, school_id))
                 db.commit()
+                flash('Subject added successfully!', 'success')
+
+            elif action == 'update_subject':
+                subject_id = request.form.get('subject_id')
+                subject_name = request.form.get('subject_name')
+                class_id = request.form.get('class_id')
+                teacher_id = request.form.get('teacher_id')
+                credits = request.form.get('credits') 
+                semester = request.form.get('semester')
                 
+                cursor.execute("""
+                    UPDATE subject 
+                    SET subject_name=%s, class_id=%s, teacher_id=%s, semester=%s, credits=%s
+                    WHERE subject_id=%s AND school_id=%s
+                """, (subject_name, class_id, teacher_id, semester, credits, subject_id, school_id))
+                db.commit()
+                flash('Subject updated successfully!', 'success')
+                return redirect(url_for('main.manage_subjects'))
+
+            elif action == 'delete_subject':
+                subject_id = request.form.get('subject_id')
+                cursor.execute("DELETE FROM subject WHERE subject_id = %s AND school_id = %s", (subject_id, school_id))
+                db.commit()
+                flash('Subject deleted successfully!', 'success')
+
         except Exception as e:
+            flash(f'Error: {str(e)}', 'error')
             pass
+
+    # Check for Edit Mode
+    edit_class_id = request.args.get('edit_class_id')
+    if edit_class_id:
+        cursor.execute("SELECT * FROM class WHERE class_id = %s AND school_id = %s", (edit_class_id, school_id))
+        edit_class = cursor.fetchone()
+
+    edit_subject_id = request.args.get('edit_subject_id')
+    if edit_subject_id:
+         cursor.execute("SELECT * FROM subject WHERE subject_id = %s AND school_id = %s", (edit_subject_id, school_id))
+         edit_subject = cursor.fetchone()
 
     # Fetch Data
     cursor.execute("SELECT * FROM class WHERE school_id = %s", (school_id,))
@@ -104,7 +201,48 @@ def manage_subjects():
     subjects = cursor.fetchall()
 
     db.close()
-    return render_template('manage_subjects.html', classes=classes, teachers=teachers, subjects=subjects)
+    return render_template('manage_subjects.html', classes=classes, teachers=teachers, subjects=subjects, edit_class=edit_class, edit_subject=edit_subject)
+
+@main_bp.route('/manage_timings', methods=['GET', 'POST'])
+@login_required
+def manage_timings():
+    if request.method == 'POST':
+        start_time = request.form.get('start_time')
+        end_time = request.form.get('end_time')
+        lecture_duration = request.form.get('lecture_duration')
+        break_start = request.form.get('break_start')
+        break_duration = request.form.get('break_duration')
+
+        db = connect_db()
+        cursor = db.cursor()
+        
+        try:
+            sql = """
+                UPDATE schools 
+                SET start_time = %s, end_time = %s, lecture_duration = %s, break_start_time = %s, break_duration = %s
+                WHERE school_id = %s
+            """
+            cursor.execute(sql, (start_time, end_time, lecture_duration, break_start, break_duration, session['school_id']))
+            db.commit()
+            
+            # Update session config
+            session['time_config'] = {
+                'start_time': start_time,
+                'end_time': end_time,
+                'lecture_duration': int(lecture_duration),
+                'break_start': break_start,
+                'break_duration': int(break_duration) if break_duration else 0
+            }
+            flash('Timings updated successfully!', 'success')
+        except Exception as e:
+            flash(f'Error updating timings: {str(e)}', 'error')
+        finally:
+            db.close()
+            
+        return redirect(url_for('main.manage_timings'))
+
+    # GET request
+    return render_template('manage_timings.html', config=session.get('time_config'))
 
 @main_bp.route('/credits')
 @login_required
@@ -182,18 +320,12 @@ def get_daily_slots(config, include_break=False):
         
     return slots
 
-@main_bp.route('/generate', methods=['POST'])
-@login_required
-def generate_timetable():
+def perform_timetable_generation(class_name, semester, priorities, school_id):
+    """
+    Helper function to perform the actual timetable generation logic.
+    Returns: (saved_timetable, error_message)
+    """
     try:
-        data = request.json
-        class_name = data.get('class_name')
-        semester = data.get('semester')
-        priorities = data.get('priorities', {})
-        # credits = data.get('credits') # Ignore frontend credits, fetch from DB
-
-        school_id = session['school_id']
-
         # Fetch subjects and their Credits from DB
         db = connect_db()
         cursor = db.cursor(dictionary=True, buffered=True)
@@ -202,109 +334,140 @@ def generate_timetable():
         cursor.execute("SELECT class_id FROM class WHERE class_name = %s AND school_id = %s", (class_name, school_id))
         res = cursor.fetchone()
         if not res:
-             return jsonify({"error": f"Class '{class_name}' not found"}), 404
+            db.close()
+            return None, f"Class '{class_name}' not found"
         class_id = res['class_id']
 
-        # Fetch subjects with credits
-        cursor.execute("SELECT subject_name, credits FROM subject WHERE class_id = %s AND semester = %s AND school_id = %s", (class_id, semester, school_id))
+        # Get course_id
+        cursor.execute("SELECT course_id FROM course WHERE school_id = %s LIMIT 1", (school_id,))
+        course_res = cursor.fetchone()
+        course_id = course_res['course_id'] if course_res else 1
+
+        # 🔹 Generate timetable with constraints
+        # 1. Map Subject -> Teacher -> Busy Slots
+        # We need to know which slots are invalid for each subject based on its teacher
+        invalid_slots = {} 
+        
+        # Build map of time_id -> time_string for easy lookup
+        # We need this to convert DB time_ids back to strings the algo understands
+        # We can build it from timeslots list assuming they map to IDs we just synced?
+        # Better: Query DB for all timeslots to get ID->String map
+        cursor.execute("SELECT time_id, timeslot FROM timeslot")
+        all_db_slots = cursor.fetchall() # list of (id, timedelta)
+        
+        id_to_time_map = {}
+        for row in all_db_slots:
+            # Format timedelta to HH:MM:SS
+            t_str = str(row['timeslot'])
+            if len(t_str) == 7: # 9:00:00 -> 09:00:00
+                 t_str = "0" + t_str
+            id_to_time_map[row['time_id']] = t_str
+
+        # Re-fetch subjects including teacher_id
+        cursor.execute("SELECT subject_name, credits, teacher_id FROM subject WHERE class_id = %s AND semester = %s AND school_id = %s", (class_id, semester, school_id))
         subject_rows = cursor.fetchall()
-        db.close()
-
-        if not subject_rows:
-            return jsonify({"error": "No subjects found for this class and semester"}), 400
-
+        
         subjects = [row['subject_name'] for row in subject_rows]
         credits = {row['subject_name']: row['credits'] for row in subject_rows}
-        
-        # Ensure priorities exist for all subjects
+        # Re-map priorities
         final_priorities = {}
         for sub in subjects:
             final_priorities[sub] = int(priorities.get(sub, 1))
 
+        # 🔹 Retrieve Time Config and Generate Timeslots
         time_config = session.get('time_config')
-        if time_config:
-            # Generate dynamic timeslots
-            timeslots = get_daily_slots(time_config, include_break=False)
-            print(f"Generated dynamic timeslots: {timeslots}")
-        else:
-             return jsonify({"error": "Time configuration not found. Please re-login."}), 400
+        if not time_config:
+             db.close()
+             return None, "Time configuration not found. Please re-login."
 
-        total_available_slots = len(timeslots) * 6  
-        total_required_slots = sum(credits.values())
-
-        if total_required_slots > total_available_slots:
-            return jsonify({"error": f"Not enough timeslots! Required: {total_required_slots}, Available: {total_available_slots}"}), 400
-
-        db = connect_db()
-        cursor = db.cursor(buffered=True)
-
-        # Get course_id (Simplified: assuming one course per class/school logic from before)
-        # We need it for INSERT.
-        cursor.execute("SELECT course_id FROM course WHERE school_id = %s LIMIT 1", (school_id,))
-        res = cursor.fetchone()
-        course_id = res[0] if res else 1
-
-        # 🔹 Synch Timeslots to DB (Ensure they exist)
-        # We need to ensure every generated timeslot exists in DB to have a time_id
-        # We will build a map of {timeslot_string: time_id}
-        timeslot_id_map = {}
+        # Generate dynamic timeslots
+        timeslots = get_daily_slots(time_config, include_break=False)
+        
+        # 🔹 Sync Timeslots to DB (Ensure they exist and get IDs)
+        # We prefer using the dynamic slots generated from config.
+        # But we need their IDs.
+        timeslot_id_map = {} # Map string -> ID
         
         for slot in timeslots:
-            cursor.execute("SELECT time_id FROM timeslot WHERE timeslot = %s", (slot,))
-            result = cursor.fetchone()
-            if result:
-                timeslot_id_map[slot] = result[0]
-            else:
-                # Insert new slot
-                print(f"Inserting new timeslot: {slot}")
-                cursor.execute("INSERT INTO timeslot (timeslot, type_of_class) VALUES (%s, 'lecture')", (slot,))
-                timeslot_id_map[slot] = cursor.lastrowid
+            # Check if this exact string exists in DB map we built earlier
+             # We built id_to_time_map earlier: ID -> String
+             # Let's verify against that or just query/insert.
+             
+             # Reverse lookup in existing map?
+             found_id = None
+             for tid, tstr in id_to_time_map.items():
+                 if tstr == slot:
+                     found_id = tid
+                     break
+            
+             if found_id:
+                 timeslot_id_map[slot] = found_id
+             else:
+                 # Insert new if not found (Consistency check)
+                 cursor.execute("INSERT INTO timeslot (timeslot, type_of_class) VALUES (%s, 'lecture')", (slot,))
+                 timeslot_id_map[slot] = cursor.lastrowid
+                 # Update reverse map too just in case
+                 id_to_time_map[cursor.lastrowid] = slot
         
-        db.commit() # Commit new timeslots
+        db.commit() # Commit any new slots
 
-        # 🔹 Clear existing timetable for this class and semester to prevent self-conflicts
-        print(f"DEBUG: Clearing existing timetable for Class {class_id}, Semester {semester}")
-        cursor.execute("DELETE FROM timetable WHERE class_id = %s", (class_id,)) 
+        # 🔹 Clear existing timetable for this class to prevent self-conflict
+        cursor.execute("DELETE FROM timetable WHERE class_id = %s", (class_id,))
         db.commit()
 
-        # 🔹 Fetch existing teacher schedules (excluding what we just deleted)
-        cursor.execute("SELECT teacher_id, time_id FROM timetable")
-        existing_teacher_schedules = cursor.fetchall()
+        # 🔹 RE-BUILD teacher_schedule_map with DAYS
+        cursor.execute("SELECT teacher_id, time_id, day FROM timetable")
+        existing_schedule_rows = cursor.fetchall()
+        
+        # Map: teacher_id -> set of (day, time_string)
+        teacher_busy_map = {}
+        for r_tid, r_timeid, r_day in existing_schedule_rows:
+            if r_tid not in teacher_busy_map:
+                teacher_busy_map[r_tid] = set()
+            
+            # Convert time_id to string
+            t_str = id_to_time_map.get(r_timeid)
+            if t_str and r_day:
+                teacher_busy_map[r_tid].add((r_day, t_str))
 
-        teacher_schedule_map = {}
-        for teacher_id, time_id in existing_teacher_schedules:
-            if teacher_id not in teacher_schedule_map:
-                teacher_schedule_map[teacher_id] = set()
-            teacher_schedule_map[teacher_id].add(time_id)
+        # Now populate invalid_slots for our algorithm
+        for row in subject_rows:
+            subj_name = row['subject_name']
+            t_id = row['teacher_id']
+            if t_id in teacher_busy_map:
+                invalid_slots[subj_name] = teacher_busy_map[t_id]
 
+        # DEBUG LOGGING SETUP
+        import logging
+        logging.basicConfig(filename='debug_gen.log', level=logging.DEBUG)
+        
+        logging.info(f"DEBUG: derived invalid_slots for constraints: {invalid_slots}")
+
+        logging.info(f"STARTING GENERATION: Class={class_name}, Sem={semester}, School={school_id}")
+        
         # 🔹 Generate timetable
-        timetable = genetic_algorithm(subjects, timeslots, final_priorities, credits)
+        timetable = genetic_algorithm(subjects, timeslots, final_priorities, credits, invalid_slots=invalid_slots)
+        logging.info(f"Algorithm produced {len(timetable)} entries")
 
         # 🔹 Convert `timedelta` timeslot values to strings before querying
-        # And ensure we have a working list we can modify/filter
         for entry in timetable:
             if isinstance(entry["timeslot"], timedelta):  
-                entry["timeslot"] = str(entry["timeslot"])  # Convert to "HH:MM:SS" format
+                entry["timeslot"] = str(entry["timeslot"])  
 
-        # session['timetable'] = timetable  <-- Don't save yet!
-
-        saved_timetable = [] # Only keep entries that are actually saved
-
-        print(f"DEBUG: Starting DB insertion loop. Total generated entries: {len(timetable)}")
+        saved_timetable = [] 
+        logging.info(f"DEBUG: Starting DB insertion loop. Total generated entries: {len(timetable)}")
 
         for entry in timetable:
+            # Ensure semester is int for DB query consistency if column is int
+            semester_int = int(semester)
             cursor.execute(
                 "SELECT subject_id, teacher_id FROM subject WHERE subject_name = %s AND class_id = %s AND semester = %s",
-                (entry["subject"], class_id, semester)
+                (entry["subject"], class_id, semester_int)
             )
             result = cursor.fetchone()
             if result:
-                subject_id, teacher_id = result
-                
-                # 🔹 Retrieve correct `time_id` from our map or DB
-                # Since we synced earlier, we can try to use our map for efficiency or query DB safely
-                # Let's use the DB query as original logic, but now satisfied knowing it exists.
-                # Actually, using map is safer if we just inserted it.
+                subject_id = result['subject_id']
+                teacher_id = result['teacher_id']
                 
                 time_id = timeslot_id_map.get(entry["timeslot"])
                 
@@ -314,66 +477,93 @@ def generate_timetable():
                     time_id_result = cursor.fetchone()
                     if time_id_result:
                          time_id = int(time_id_result[0])
-
-                if not time_id:
-                    print(f"DEBUG: Skipping entry {entry['subject']}: No time_id found for {entry['timeslot']}")
-                    continue  # Skip if no time_id found
-
-                # 🔹 Check for teacher conflict
-                if teacher_id in teacher_schedule_map and time_id in teacher_schedule_map[teacher_id]:
-                    # print(f"⚠️ Conflict detected: Teacher {teacher_id} is already assigned at timeslot {time_id}.")
-
-                    # Find an alternative timeslot
-                    # Available = All generated dynamic timeslots - Teacher's busy ID mapping
-                    # We have IDs in teacher_schedule_map. We need IDs of our current dynamic set.
-                    
-                    current_slot_ids = set(timeslot_id_map.values())
-                    busy_ids = teacher_schedule_map.get(teacher_id, set())
-                    
-                    available_ids = current_slot_ids - busy_ids
-                    
-                    if available_ids:
-                        new_time_id = list(available_ids)[0] # Pick first available
-                        # Find string for this ID
-                        new_timeslot_str = next((k for k, v in timeslot_id_map.items() if v == new_time_id), None)
-                        
-                        if new_time_id:
-                            # print(f"✅ Rescheduled to available timeslot {new_time_id} ({new_timeslot_str}).")
-                            time_id = new_time_id
-                            entry['timeslot'] = new_timeslot_str
-                        else:
-                             print(f"DEBUG: Skipping entry {entry['subject']}: Logic Error finding string for ID {new_time_id}")
-                             continue
-                    else:
-                        print(f"DEBUG: Skipping entry {entry['subject']}: No available timeslot for teacher {teacher_id}")
-                        continue
-
-                # Insert into timetable and update teacher's occupied slots
-                # UPDATE: Included 'day' in insert
-                cursor.execute(
-                    "INSERT INTO timetable (teacher_id, subject_id, class_id, course_id, time_id, day, school_id) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-                    (teacher_id, subject_id, class_id, course_id, time_id, entry['day'], school_id)
-                )
-                if teacher_id not in teacher_schedule_map:
-                    teacher_schedule_map[teacher_id] = set()
-                teacher_schedule_map[teacher_id].add(time_id)
                 
-                # Add to saved list
-                saved_timetable.append(entry)
+                if not time_id:
+                    logging.warning(f"DEBUG: Skipping entry {entry['subject']}: No time_id found for {entry['timeslot']}")
+                    continue 
+                
+                # Check for existing entry to prevent duplicates (though we deleted valid ones earlier)
+                # But we deleted WHERE class_id = ... so we should be clear.
+                
+                # Insert into timetable
+                try:
+                    cursor.execute(
+                        "INSERT INTO timetable (teacher_id, subject_id, class_id, course_id, time_id, day, school_id) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                        (teacher_id, subject_id, class_id, course_id, time_id, entry['day'], school_id)
+                    )
+                    saved_timetable.append(entry)
+                except Exception as e:
+                    logging.error(f"Insert Failed: {e}")
+                    # Do not append to saved_timetable if insert failed
             else:
-                 print(f"DEBUG: Skipping entry {entry['subject']}: Subject not found in DB for Class {class_id} Sem {semester}")
+                 logging.warning(f"DEBUG: Skipping entry {entry['subject']}: Subject not found in DB for Class {class_id} Sem {semester_int} (Orig: {semester})")
 
         db.commit()
         cursor.close()
         db.close()
-
-        print(f"DEBUG: Finished insertion. Saved {len(saved_timetable)} entries.")
-        session['timetable'] = saved_timetable # Update session with only the successfully saved entries
-
-        return jsonify({"success": True, "redirect": "/final_timetable"})
+        return saved_timetable, None
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return None, str(e)
+
+
+@main_bp.route('/generate', methods=['POST'])
+@login_required
+def generate_timetable():
+    try:
+        data = request.json
+        class_name = data.get('class_name')
+        semester = data.get('semester')
+        priorities = data.get('priorities', {})
+        school_id = session['school_id']
+
+        saved_timetable, error = perform_timetable_generation(class_name, semester, priorities, school_id)
+        
+        if error:
+             return jsonify({"error": error}), 500
+
+        print(f"DEBUG: Finished insertion. Saved {len(saved_timetable)} entries.")
+        
+        session['timetable'] = saved_timetable
+        
+        # Save context for regeneration UX
+        session['generation_context'] = {
+            'class_name': class_name,
+            'semester': semester,
+            'priorities': priorities # Store priorities for quick regenerate
+        }
+
+        return jsonify({"message": "Timetable generated successfully!", "redirect": "/final_timetable"})
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
+@main_bp.route('/regenerate_quick')
+@login_required
+def regenerate_quick():
+    context = session.get('generation_context')
+    if not context:
+        flash("No recent generation context found. Please generate normally first.", "warning")
+        return redirect(url_for('main.generate_setup'))
+    
+    class_name = context.get('class_name')
+    semester = context.get('semester')
+    priorities = context.get('priorities')
+    school_id = session['school_id']
+    
+    saved_timetable, error = perform_timetable_generation(class_name, semester, priorities, school_id)
+    
+    if error:
+        flash(f"Regeneration failed: {error}", "error")
+        return redirect(url_for('main.final_timetable'))
+        
+    session['timetable'] = saved_timetable
+    flash("Timetable regenerated successfully!", "success")
+    return redirect(url_for('main.final_timetable'))
 
 @main_bp.route('/save_modified_timetable', methods=['POST'])
 def save_modified_timetable():
@@ -401,6 +591,8 @@ def save_modified_timetable():
 @main_bp.route('/final_timetable')
 def final_timetable():
     timetable_data = session.get('timetable', [])
+    context = session.get('generation_context', {})
+    
     structured_timetable = {}
     
     # Populate structured timetable
@@ -415,12 +607,13 @@ def final_timetable():
     if time_config:
          visual_slots = get_daily_slots(time_config, include_break=True)
     else:
-         # Fallback logic if no config (e.g. legacy or simple view)
-         # We just use the unique timeslots found in data
-         used_slots = set(entry['timeslot'] for entry in timetable_data)
-         visual_slots = [{'time': slot, 'type': 'lecture'} for slot in sorted(used_slots)]
+         visual_slots = [{'time': slot, 'type': 'lecture'} for slot in sorted(set(entry['timeslot'] for entry in timetable_data))]
 
-    return render_template("final_timetable.html", timetable=structured_timetable, timeslots=visual_slots)
+    return render_template("final_timetable.html", 
+                           timetable=structured_timetable, 
+                           timeslots=visual_slots,
+                           class_name=context.get('class_name'),
+                           semester=context.get('semester'))
 
 @main_bp.route('/modify_timetable', methods=['GET', 'POST'])
 def modify_timetable():
@@ -461,25 +654,64 @@ def get_timetable():
     try:
         class_name = request.args.get('class_name')
         semester = request.args.get('semester')
+        
+        # Public Access Logic: Resolve School ID by Username
+        school_username = request.args.get('username')
+        school_id = None
+        
+        if school_username:
+             db = connect_db()
+             cursor = db.cursor(dictionary=True)
+             cursor.execute("SELECT school_id FROM schools WHERE username = %s", (school_username,))
+             school = cursor.fetchone()
+             db.close()
+             
+             if school:
+                 school_id = school['school_id']
+             else:
+                 return jsonify({"error": "School not found. Please check the username."}), 404
+        
+        # Fallback to session if available (Admin viewing)
+        if not school_id:
+            school_id = session.get('school_id')
+
+        if not school_id:
+            # No username provided and not logged in
+            return jsonify({"error": "Please provide the School's Admin Username."}), 400
 
         if not class_name or not semester:
             return jsonify({"error": "Missing class name or semester"}), 400
 
         # Try fetching from DB first
-        timetable_db, timeslots_list = get_timetable_by_class(class_name, semester, session['school_id'])
+        timetable_db, timeslots_list = get_timetable_by_class(class_name, semester, school_id)
         
         # If we have time_config in session (and checks pass), use it for better visualization?
-        # But this might be risky if viewing a DIFFERENT class.
-        # So for View, strictly use the DB data + whatever gaps we can infer OR just simple list.
-        # But wait, if user wants to see breaks in View, we need that info.
-        # Since we don't store "Break" in DB, we can't show it in View Timetable safely unless we assume global break or current session config.
-        # Let's use session config if available for now (Assuming user is verifying their work).
+        # For public access, we don't have session['time_config'].
+        # We should fetch time config for the school from DB if possible, or just rely on DB slots.
         
         visual_slots = []
         time_config = session.get('time_config')
+        
+        if not time_config and school_id:
+             # Fetch config from DB for public view
+             db = connect_db()
+             cursor = db.cursor(dictionary=True)
+             cursor.execute("SELECT * FROM schools WHERE school_id = %s", (school_id,))
+             school_config = cursor.fetchone()
+             db.close()
+             
+             if school_config:
+                 # Construct minimal config object
+                 time_config = {
+                    'start_time': str(school_config['start_time']),
+                    'end_time': str(school_config['end_time']),
+                    'lecture_duration': school_config['lecture_duration'],
+                    'break_start': str(school_config['break_start_time']) if school_config['break_start_time'] else None,
+                    'break_duration': school_config['break_duration']
+                 }
+
         if time_config:
-             print("Using session time_config for View.")
-             # Assume this config applies to what we are viewing (Verification Phase)
+             # Assume this config applies to what we are viewing
              visual_slots = get_daily_slots(time_config, include_break=True)
         else:
              # Just map the raw strings to objects
@@ -488,10 +720,11 @@ def get_timetable():
         if timetable_db:
              return jsonify({"timetable": timetable_db, "visual_slots": visual_slots})
 
-        # Fallback to session
+        # Fallback to session (Only if logged in / admin viewing own generation)
+        # Students won't have session['timetable']
         timetable_data = session.get('timetable', [])
         if not timetable_data:
-            return jsonify({"error": "No timetable found for this class. Please generate it first."}), 404
+            return jsonify({"error": "No timetable found for this class."}), 404
 
         structured_timetable = {}
         for entry in timetable_data:

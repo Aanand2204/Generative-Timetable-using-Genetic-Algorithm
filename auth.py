@@ -87,3 +87,23 @@ def logout():
     session.clear()
     flash('Logged out successfully', 'info')
     return redirect(url_for('auth.login'))
+
+@auth_bp.route('/delete_account', methods=['POST'])
+def delete_account():
+    if 'school_id' not in session:
+        return redirect(url_for('auth.login'))
+        
+    try:
+        db = connect_db()
+        cursor = db.cursor()
+        # Due to ON DELETE CASCADE in schema, this deletes everything
+        cursor.execute("DELETE FROM schools WHERE school_id = %s", (session['school_id'],))
+        db.commit()
+        db.close()
+        
+        session.clear()
+        flash('Account deleted successfully.', 'info')
+        return redirect(url_for('main.index'))
+    except Exception as e:
+        flash(f'Error deleting account: {str(e)}', 'error')
+        return redirect(url_for('main.dashboard'))

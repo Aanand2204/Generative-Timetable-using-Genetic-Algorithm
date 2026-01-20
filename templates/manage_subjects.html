@@ -12,14 +12,28 @@
 
         <!-- Left Column: Add Class & Classes List -->
         <div style="display: flex; flex-direction: column; gap: 2rem;">
-            <!-- Add Class -->
+            <!-- Add/Edit Class -->
             <div class="card">
-                <h3 style="margin-bottom: 1rem;">Add Class</h3>
+                <h3 style="margin-bottom: 1rem;">{{ 'Edit Class' if edit_class else 'Add Class' }}</h3>
                 <form action="{{ url_for('main.manage_subjects') }}" method="POST">
+                    {% if edit_class %}
+                    <input type="hidden" name="action" value="update_class">
+                    <input type="hidden" name="class_id" value="{{ edit_class.class_id }}">
+                    {% else %}
                     <input type="hidden" name="action" value="add_class">
+                    {% endif %}
+
                     <label for="class_name">Class Name (e.g. FY, SY):</label>
-                    <input type="text" id="class_name" name="class_name" required>
-                    <button type="submit" class="w-full">Add Class</button>
+                    <input type="text" id="class_name" name="class_name"
+                        value="{{ edit_class.class_name if edit_class else '' }}" required>
+
+                    <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                        <button type="submit" class="w-full">{{ 'Update' if edit_class else 'Add Class' }}</button>
+                        {% if edit_class %}
+                        <a href="{{ url_for('main.manage_subjects') }}" class="button"
+                            style="background-color: #6b7280; color: white; text-align: center;">Cancel</a>
+                        {% endif %}
+                    </div>
                 </form>
             </div>
 
@@ -28,8 +42,22 @@
                 <h3 style="margin-bottom: 1rem;">Existing Classes</h3>
                 <ul style="list-style: none; padding: 0;">
                     {% for cls in classes %}
-                    <li style="padding: 0.5rem; border-bottom: 1px solid #f3f4f6;">
-                        {{ cls.class_name }}
+                    <li
+                        style="padding: 1rem; border-bottom: 1px solid #f3f4f6; display: flex; justify-content: space-between; align-items: center;">
+                        <span>{{ cls.class_name }}</span>
+
+                        <div style="display: flex; gap: 0.5rem;">
+                            <a href="{{ url_for('main.manage_subjects', edit_class_id=cls.class_id) }}"
+                                style="color: #2563eb; text-decoration: none;">Edit</a>
+
+                            <form action="{{ url_for('main.manage_subjects') }}" method="POST" style="display: inline;"
+                                onsubmit="return confirm('Delete this Class? All subjects in this class will also be deleted.');">
+                                <input type="hidden" name="action" value="delete_class">
+                                <input type="hidden" name="class_id" value="{{ cls.class_id }}">
+                                <button type="submit"
+                                    style="background: none; border: none; color: #dc2626; cursor: pointer; padding: 0;">Delete</button>
+                            </form>
+                        </div>
                     </li>
                     {% else %}
                     <li style="color: #6b7280;">No classes added.</li>
@@ -40,16 +68,23 @@
 
         <!-- Right Column: Add Subject & Subjects List -->
         <div style="display: flex; flex-direction: column; gap: 2rem;">
-            <!-- Add Subject -->
+            <!-- Add/Edit Subject -->
             <div class="card">
-                <h3 style="margin-bottom: 1rem;">Add Subject</h3>
+                <h3 style="margin-bottom: 1rem;">{{ 'Edit Subject' if edit_subject else 'Add Subject' }}</h3>
                 <form action="{{ url_for('main.manage_subjects') }}" method="POST"
                     style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+
+                    {% if edit_subject %}
+                    <input type="hidden" name="action" value="update_subject">
+                    <input type="hidden" name="subject_id" value="{{ edit_subject.subject_id }}">
+                    {% else %}
                     <input type="hidden" name="action" value="add_subject">
+                    {% endif %}
 
                     <div style="grid-column: span 2;">
                         <label for="subject_name">Subject Name:</label>
-                        <input type="text" id="subject_name" name="subject_name" required>
+                        <input type="text" id="subject_name" name="subject_name"
+                            value="{{ edit_subject.subject_name if edit_subject else '' }}" required>
                     </div>
 
                     <div>
@@ -57,14 +92,16 @@
                         <select id="class_id" name="class_id" required>
                             <option value="">Select Class</option>
                             {% for cls in classes %}
-                            <option value="{{ cls.class_id }}">{{ cls.class_name }}</option>
+                            <option value="{{ cls.class_id }}" {{ 'selected' if edit_subject and
+                                edit_subject.class_id==cls.class_id else '' }}>{{ cls.class_name }}</option>
                             {% endfor %}
                         </select>
                     </div>
 
                     <div>
                         <label for="semester">Semester:</label>
-                        <input type="number" id="semester" name="semester" required min="1" max="8">
+                        <input type="number" id="semester" name="semester" required min="1" max="8"
+                            value="{{ edit_subject.semester if edit_subject else '' }}">
                     </div>
 
                     <div>
@@ -72,18 +109,25 @@
                         <select id="teacher_id" name="teacher_id" required>
                             <option value="">Select Teacher</option>
                             {% for teacher in teachers %}
-                            <option value="{{ teacher.teacher_id }}">{{ teacher.teacher_name }}</option>
+                            <option value="{{ teacher.teacher_id }}" {{ 'selected' if edit_subject and
+                                edit_subject.teacher_id==teacher.teacher_id else '' }}>{{ teacher.teacher_name }}
+                            </option>
                             {% endfor %}
                         </select>
                     </div>
 
                     <div>
                         <label for="credits">Credits:</label>
-                        <input type="number" id="credits" name="credits" required min="1" max="5" value="4">
+                        <input type="number" id="credits" name="credits" required min="1" max="5"
+                            value="{{ edit_subject.credits if edit_subject else '4' }}">
                     </div>
 
-                    <div style="grid-column: span 2;">
-                        <button type="submit" class="w-full">Add Subject</button>
+                    <div style="grid-column: span 2; display: flex; gap: 0.5rem;">
+                        <button type="submit" class="w-full">{{ 'Update' if edit_subject else 'Add Subject' }}</button>
+                        {% if edit_subject %}
+                        <a href="{{ url_for('main.manage_subjects') }}" class="button"
+                            style="background-color: #6b7280; color: white; text-align: center;">Cancel</a>
+                        {% endif %}
                     </div>
                 </form>
             </div>
@@ -99,6 +143,7 @@
                             <th style="padding: 0.5rem;">Class</th>
                             <th style="padding: 0.5rem;">Teacher</th>
                             <th style="padding: 0.5rem;">Sem</th>
+                            <th style="padding: 0.5rem;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -108,6 +153,19 @@
                             <td style="padding: 0.5rem;">{{ sub.class_name }}</td>
                             <td style="padding: 0.5rem;">{{ sub.teacher_name }}</td>
                             <td style="padding: 0.5rem;">{{ sub.semester }}</td>
+                            <td style="padding: 0.5rem; display: flex; gap: 0.5rem;">
+                                <a href="{{ url_for('main.manage_subjects', edit_subject_id=sub.subject_id) }}"
+                                    title="Edit">✏️</a>
+
+                                <form action="{{ url_for('main.manage_subjects') }}" method="POST"
+                                    style="display: inline;" onsubmit="return confirm('Delete this subject?');">
+                                    <input type="hidden" name="action" value="delete_subject">
+                                    <input type="hidden" name="subject_id" value="{{ sub.subject_id }}">
+                                    <button type="submit"
+                                        style="background: none; border: none; cursor: pointer; padding: 0;"
+                                        title="Delete">🗑️</button>
+                                </form>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>

@@ -6,6 +6,10 @@
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
     <h1>Final Timetable 📅</h1>
     <div>
+        {% if class_name and semester %}
+        <a href="{{ url_for('main.regenerate_quick') }}" class="btn-secondary"
+            style="padding: 0.75rem 1.5rem; margin-right: 0.5rem; text-decoration: none; display: inline-block;">Regenerate</a>
+        {% endif %}
         <button onclick="window.print()">🖨️ Print</button>
         <button class="btn-secondary" onclick="window.location.href='/modify_timetable'">Modify</button>
     </div>

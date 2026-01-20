@@ -13,7 +13,8 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
                 <div>
                     <label for="class_name">Class:</label>
-                    <select id="class_name" name="class_name" required onchange="fetchSubjects()">
+                    <select id="class_name" name="class_name" required onchange="fetchSubjects()"
+                        onkeydown="if(event.key === 'Enter') { event.preventDefault(); return false; }">
                         <option value="">Select Class</option>
                         {% for cls in classes %}
                         <option value="{{ cls.class_name }}">{{ cls.class_name }}</option>
@@ -23,13 +24,15 @@
                 <div>
                     <label for="semester">Semester:</label>
                     <input type="number" id="semester" name="semester" required min="1" max="8"
-                        onchange="fetchSubjects()">
+                        onchange="fetchSubjects()"
+                        onkeydown="if(event.key === 'Enter') { event.preventDefault(); return false; }">
                 </div>
             </div>
 
             <div id="subjectsSection" style="display: none;">
                 <h3 style="margin-bottom: 1rem; font-size: 1.1rem; color: #374151;">Set Priorities</h3>
-                <p style="font-size: 0.9rem; color: #6b7280; margin-bottom: 1rem;">Higher number = Higher priority (1-5)
+                <p style="font-size: 0.9rem; color: #6b7280; margin-bottom: 1rem;">Higher number = Higher priority <span
+                        id="priorityRangeLabel">(1-5)</span>
                 </p>
 
                 <div id="subjectsList" style="display: grid; gap: 1rem; margin-bottom: 2rem;">
@@ -68,11 +71,15 @@
 
                     div.innerHTML = `
                     <span style="font-weight: 500;">${sub}</span>
-                    <input type="number" class="priority-input" data-subject="${sub}" value="1" min="1" max="5" style="width: 80px;">
+                    <input type="number" class="priority-input" data-subject="${sub}" value="1" min="1" max="${subjects.length}" style="width: 80px;">
                 `;
                     list.appendChild(div);
                 });
                 section.style.display = 'block';
+                const label = document.getElementById('priorityRangeLabel');
+                if (label) {
+                    label.innerText = `(1-${subjects.length})`;
+                }
             } else {
                 section.style.display = 'none';
             }
@@ -86,7 +93,16 @@
         const semester = document.getElementById('semester').value;
         const priorityInputs = document.querySelectorAll('.priority-input');
 
-        if (!className || !semester) return;
+        if (!className || !semester) {
+            alert("Please select Class and Semester first.");
+            return;
+        }
+
+        if (priorityInputs.length === 0) {
+            alert("Please wait for subjects to load and set priorities before generating.");
+            fetchSubjects(); // Try fetching again if missing
+            return;
+        }
 
         const priorities = {};
         const credits = {}; // We will let backend fetch credits from DB, but we need to pass empty or overrides?
@@ -109,8 +125,11 @@
             });
 
             const result = await response.json();
-            if (result.success) {
+            if (result.redirect) {
                 window.location.href = result.redirect;
+            } else if (result.success) {
+                // Fallback if success is used
+                window.location.href = result.redirect || '/final_timetable';
             } else {
                 alert(result.error || 'Generation failed');
             }
@@ -118,5 +137,21 @@
             alert('An error occurred');
         }
     }
+    window.onload = function () {
+        const urlParams = new URLSearchParams(window.location.search);
+        const className = urlParams.get('class_name');
+        const semester = urlParams.get('semester');
+
+        if (className && semester) {
+            const classSelect = document.getElementById('class_name');
+            const semesterInput = document.getElementById('semester');
+
+            if (classSelect && semesterInput) {
+                classSelect.value = className;
+                semesterInput.value = semester;
+                fetchSubjects();
+            }
+        }
+    };
 </script>
 {% endblock %}

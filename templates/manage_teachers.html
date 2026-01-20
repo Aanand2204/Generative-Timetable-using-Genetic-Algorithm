@@ -9,14 +9,28 @@
     </div>
 
     <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; align-items: start;">
-        <!-- Add Teacher Form -->
+        <!-- Add/Edit Teacher Form -->
         <div class="card">
-            <h3 style="margin-bottom: 1rem;">Add Teacher</h3>
+            <h3 style="margin-bottom: 1rem;">{{ 'Edit Teacher' if edit_teacher else 'Add Teacher' }}</h3>
             <form action="{{ url_for('main.manage_teachers') }}" method="POST">
-                <label for="teacher_name">Name:</label>
-                <input type="text" id="teacher_name" name="teacher_name" required>
+                {% if edit_teacher %}
+                <input type="hidden" name="action" value="update">
+                <input type="hidden" name="teacher_id" value="{{ edit_teacher.teacher_id }}">
+                {% else %}
+                <input type="hidden" name="action" value="add">
+                {% endif %}
 
-                <button type="submit" class="w-full">Add Teacher</button>
+                <label for="teacher_name">Name:</label>
+                <input type="text" id="teacher_name" name="teacher_name"
+                    value="{{ edit_teacher.teacher_name if edit_teacher else '' }}" required>
+
+                <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                    <button type="submit" class="w-full">{{ 'Update' if edit_teacher else 'Add Teacher' }}</button>
+                    {% if edit_teacher %}
+                    <a href="{{ url_for('main.manage_teachers') }}" class="button"
+                        style="background-color: #6b7280; color: white; text-align: center;">Cancel</a>
+                    {% endif %}
+                </div>
             </form>
         </div>
 
@@ -31,7 +45,18 @@
                     <div>
                         <span style="font-weight: 600; font-size: 1.1rem;">{{ teacher.teacher_name }}</span>
                     </div>
-                    <!-- We could edit delete buttons here later -->
+                    <div style="display: flex; gap: 0.5rem;">
+                        <a href="{{ url_for('main.manage_teachers', edit_id=teacher.teacher_id) }}"
+                            style="color: #2563eb; text-decoration: none; padding: 0.25rem 0.5rem; border: 1px solid #2563eb; border-radius: 4px; font-size: 0.9rem;">Edit</a>
+
+                        <form action="{{ url_for('main.manage_teachers') }}" method="POST" style="display: inline;"
+                            onsubmit="return confirm('Delete this teacher?');">
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="teacher_id" value="{{ teacher.teacher_id }}">
+                            <button type="submit"
+                                style="background-color: #dc2626; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.9rem;">Delete</button>
+                        </form>
+                    </div>
                 </li>
                 {% endfor %}
             </ul>

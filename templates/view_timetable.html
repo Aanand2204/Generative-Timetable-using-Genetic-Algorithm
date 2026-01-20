@@ -8,6 +8,9 @@
 
 <!-- Selection Form -->
 <form id="viewTimetableForm">
+    <label for="username">School/Admin Username:</label>
+    <input type="text" id="username" name="username" placeholder="e.g. admin123" required>
+
     <label for="class_name">Class Name:</label>
     <input type="text" id="class_name" name="class_name" placeholder="e.g. FYBScCS" required>
 
@@ -48,13 +51,14 @@
 
         let className = document.getElementById("class_name").value.trim();
         let semester = document.getElementById("semester").value.trim();
+        let username = document.getElementById("username").value.trim();
 
-        if (!className || !semester) {
-            alert("⚠️ Please enter both Class and Semester.");
+        if (!className || !semester || !username) {
+            alert("⚠️ Please enter School Username, Class, and Semester.");
             return;
         }
 
-        fetch(`/get_timetable?class_name=${className}&semester=${semester}`)
+        fetch(`/get_timetable?class_name=${className}&semester=${semester}&username=${username}`)
             .then(response => response.json())
             .then(data => {
                 if (data.error) {

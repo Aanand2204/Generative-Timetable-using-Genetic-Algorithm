@@ -41,6 +41,29 @@
                 <p style="color: #6b7280; font-size: 0.9rem;">Create a new timetable for a specific class.</p>
             </div>
         </a>
+
+        <!-- Manage Timings -->
+        <a href="{{ url_for('main.manage_timings') }}" class="card"
+            style="text-decoration: none; color: inherit; transition: transform 0.2s;"
+            onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="text-align: center;">
+                <span style="font-size: 3rem; display: block; margin-bottom: 1rem;">⏰</span>
+                <h3 style="margin-bottom: 0.5rem; color: var(--primary);">Timings</h3>
+                <p style="color: #6b7280; font-size: 0.9rem;">Configure school slots and breaks.</p>
+            </div>
+        </a>
+
+        <!-- Delete Account -->
+        <div class="card" style="text-align: center; border: 2px solid var(--danger-color); cursor: pointer;"
+            onclick="if(confirm('Are you sure you want to permanently delete your account and all associated data? This action cannot be undone.')) { document.getElementById('delete-account-form').submit(); }">
+            <span style="font-size: 3rem; display: block; margin-bottom: 1rem;">🗑️</span>
+            <h3 style="margin-bottom: 0.5rem; color: var(--danger-color);">Delete Account</h3>
+            <p style="color: #6b7280; font-size: 0.9rem;">Permanently remove your school and data.</p>
+        </div>
+
+        <form id="delete-account-form" action="{{ url_for('auth.delete_account') }}" method="POST"
+            style="display: none;">
+        </form>
     </div>
 </div>
 {% endblock %}
