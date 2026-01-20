@@ -10,4 +10,5 @@ app.config.from_object(Config)
 app.register_blueprint(main_bp)
 app.register_blueprint(auth_bp)
 
-app = app
+if __name__ == '__main__':
+    app.run(debug=True)
