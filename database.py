@@ -8,7 +8,8 @@ def connect_db():
         host=Config.DB_HOST,
         user=Config.DB_USER,
         password=Config.DB_PASSWORD,
-        database=Config.DB_NAME
+        database=Config.DB_NAME,
+        port=Config.DB_PORT,
     )
 
 def fetch_data(class_name, semester, school_id):

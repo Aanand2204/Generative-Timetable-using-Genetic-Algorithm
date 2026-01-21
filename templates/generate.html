@@ -14,7 +14,7 @@
                 <div>
                     <label for="class_name">Class:</label>
                     <select id="class_name" name="class_name" required onchange="fetchSubjects()"
-                        onkeydown="if(event.key === 'Enter') { event.preventDefault(); return false; }">
+                        onkeydown="handleEnter(event, 'class')">
                         <option value="">Select Class</option>
                         {% for cls in classes %}
                         <option value="{{ cls.class_name }}">{{ cls.class_name }}</option>
@@ -24,8 +24,7 @@
                 <div>
                     <label for="semester">Semester:</label>
                     <input type="number" id="semester" name="semester" required min="1" max="8"
-                        onchange="fetchSubjects()"
-                        onkeydown="if(event.key === 'Enter') { event.preventDefault(); return false; }">
+                        onchange="fetchSubjects()" onkeydown="handleEnter(event, 'semester')">
                 </div>
             </div>
 
@@ -71,7 +70,7 @@
 
                     div.innerHTML = `
                     <span style="font-weight: 500;">${sub}</span>
-                    <input type="number" class="priority-input" data-subject="${sub}" value="1" min="1" max="${subjects.length}" style="width: 80px;">
+                    <input type="number" class="priority-input" data-subject="${sub}" value="1" min="1" max="${subjects.length}" style="width: 80px;" onkeydown="handlePriorityEnter(event)">
                 `;
                     list.appendChild(div);
                 });
@@ -85,6 +84,40 @@
             }
         } catch (e) {
             console.error('Error fetching subjects:', e);
+        }
+    }
+
+    async function handleEnter(event, type) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            if (type === 'class') {
+                document.getElementById('semester').focus();
+            } else if (type === 'semester') {
+                await fetchSubjects();
+                // Wait a tick for the DOM to update
+                setTimeout(() => {
+                    const firstPriorityInput = document.querySelector('.priority-input');
+                    if (firstPriorityInput) {
+                        firstPriorityInput.focus();
+                        firstPriorityInput.select();
+                    }
+                }, 0);
+            }
+        }
+    }
+
+    function handlePriorityEnter(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            const inputs = Array.from(document.querySelectorAll('.priority-input'));
+            const index = inputs.indexOf(event.target);
+            if (index > -1 && index < inputs.length - 1) {
+                inputs[index + 1].focus();
+                inputs[index + 1].select();
+            } else {
+                // Optional: Submit if it's the last one, or just do nothing
+                submitGeneration();
+            }
         }
     }
 
