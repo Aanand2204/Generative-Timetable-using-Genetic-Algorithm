@@ -96,8 +96,39 @@ def delete_account():
     try:
         db = connect_db()
         cursor = db.cursor()
-        # Due to ON DELETE CASCADE in schema, this deletes everything
-        cursor.execute("DELETE FROM schools WHERE school_id = %s", (session['school_id'],))
+        
+        school_id = session['school_id']
+
+        # Manual Cascade Deletion to resolve missing Foreign Key constraints
+        # Order matters: Delete child records first to satisfy constraints
+
+        # 1. Delete Timetable entries
+        cursor.execute("DELETE FROM timetable WHERE school_id = %s", (school_id,))
+
+        # 2. Delete Allocated Timeslots
+        cursor.execute("DELETE FROM allocated_timeslots WHERE school_id = %s", (school_id,))
+
+        # 3. Delete Practicals
+        cursor.execute("DELETE FROM practical WHERE school_id = %s", (school_id,))
+
+        # 4. Delete Subjects (Dependent on teacher, class, course)
+        cursor.execute("DELETE FROM subject WHERE school_id = %s", (school_id,))
+        
+        # 5. Delete Rooms
+        cursor.execute("DELETE FROM room WHERE school_id = %s", (school_id,))
+
+        # 6. Delete Classes
+        cursor.execute("DELETE FROM class WHERE school_id = %s", (school_id,))
+
+        # 7. Delete Teachers
+        cursor.execute("DELETE FROM teacher WHERE school_id = %s", (school_id,))
+        
+        # 8. Delete Courses
+        cursor.execute("DELETE FROM course WHERE school_id = %s", (school_id,))
+
+        # 9. Finally delete the School record
+        cursor.execute("DELETE FROM schools WHERE school_id = %s", (school_id,))
+        
         db.commit()
         db.close()
         
