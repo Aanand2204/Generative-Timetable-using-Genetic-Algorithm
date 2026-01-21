@@ -207,11 +207,37 @@ def manage_subjects():
 @login_required
 def manage_timings():
     if request.method == 'POST':
-        start_time = request.form.get('start_time')
-        end_time = request.form.get('end_time')
-        lecture_duration = request.form.get('lecture_duration')
-        break_start = request.form.get('break_start')
-        break_duration = request.form.get('break_duration')
+        start_time_str = request.form.get('start_time')
+        lecture_duration = int(request.form.get('lecture_duration'))
+        num_lectures = int(request.form.get('num_lectures'))
+        break_after = int(request.form.get('break_after'))
+        break_duration = int(request.form.get('break_duration') or 0)
+
+        # Calculate times based on inputs
+        start_time = datetime.strptime(start_time_str, "%H:%M")
+        
+        # Calculate Break Start
+        # Break starts after 'break_after' lectures
+        # If break_after is 0, no break.
+        break_start_time = None
+        break_start_str = None
+        
+        current_time = start_time
+        
+        # We need to simulate the day to find exact break start and end time
+        # Actually easier: Break Start = Start + (Break After * Lecture Duration)
+        if break_after > 0:
+            break_start_time = start_time + timedelta(minutes=break_after * lecture_duration)
+            break_start_str = break_start_time.strftime("%H:%M")
+        
+        # Calculate School End Time
+        # Length = (Num Lectures * Duration) + (Break Duration if Applicable)
+        total_minutes = num_lectures * lecture_duration
+        if break_after > 0 and break_after < num_lectures:
+             total_minutes += break_duration
+             
+        end_time = start_time + timedelta(minutes=total_minutes)
+        end_time_str = end_time.strftime("%H:%M")
 
         db = connect_db()
         cursor = db.cursor()
@@ -222,16 +248,18 @@ def manage_timings():
                 SET start_time = %s, end_time = %s, lecture_duration = %s, break_start_time = %s, break_duration = %s
                 WHERE school_id = %s
             """
-            cursor.execute(sql, (start_time, end_time, lecture_duration, break_start, break_duration, session['school_id']))
+            cursor.execute(sql, (start_time_str, end_time_str, lecture_duration, break_start_str, break_duration, session['school_id']))
             db.commit()
             
             # Update session config
             session['time_config'] = {
-                'start_time': start_time,
-                'end_time': end_time,
-                'lecture_duration': int(lecture_duration),
-                'break_start': break_start,
-                'break_duration': int(break_duration) if break_duration else 0
+                'start_time': start_time_str,
+                'end_time': end_time_str,
+                'lecture_duration': lecture_duration,
+                'break_start': break_start_str,
+                'break_duration': break_duration,
+                'num_lectures': num_lectures,
+                'break_after': break_after
             }
             flash('Timings updated successfully!', 'success')
         except Exception as e:
@@ -242,7 +270,40 @@ def manage_timings():
         return redirect(url_for('main.manage_timings'))
 
     # GET request
-    return render_template('manage_timings.html', config=session.get('time_config'))
+    config = session.get('time_config')
+    
+    # If config is missing 'num_lectures' (migrating from old config), try to derive it
+    if config and 'num_lectures' not in config:
+        try:
+            s_time = datetime.strptime(config.get('start_time'), "%H:%M")
+            e_time = datetime.strptime(config.get('end_time'), "%H:%M")
+            l_dur = int(config.get('lecture_duration', 60))
+            b_dur = int(config.get('break_duration', 0))
+            b_start_str = config.get('break_start')
+            
+            total_duration = (e_time - s_time).seconds / 60
+            
+            # If break exists
+            if b_start_str:
+                b_start = datetime.strptime(b_start_str, "%H:%M")
+                # Lectures before break
+                lectures_before = (b_start - s_time).seconds / 60 / l_dur
+                
+                # Remaining time after break
+                # (School End - Break End) / Lecture Duration
+                b_end = b_start + timedelta(minutes=b_dur)
+                lectures_after = (e_time - b_end).seconds / 60 / l_dur
+                
+                config['num_lectures'] = int(lectures_before + lectures_after)
+                config['break_after'] = int(lectures_before)
+            else:
+                config['num_lectures'] = int(total_duration / l_dur)
+                config['break_after'] = 0
+                
+        except Exception:
+            pass # Keep defaults or what's there
+            
+    return render_template('manage_timings.html', config=config)
 
 @main_bp.route('/credits')
 @login_required

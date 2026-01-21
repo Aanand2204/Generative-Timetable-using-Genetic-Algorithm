@@ -11,15 +11,33 @@ def register():
             school_name = request.form.get('school_name')
             username = request.form.get('username')
             password = request.form.get('password')
-            start_time = request.form.get('start_time')
-            end_time = request.form.get('end_time')
-            lecture_duration = request.form.get('lecture_duration')
-            break_start_time = request.form.get('break_start')
-            break_duration = request.form.get('break_duration')
+            start_time_str = request.form.get('start_time')
+            lecture_duration = int(request.form.get('lecture_duration'))
+            num_lectures = int(request.form.get('num_lectures'))
+            break_after = int(request.form.get('break_after') or 0)
+            break_duration = int(request.form.get('break_duration') or 0)
 
             if not username or not password or not school_name:
                 flash('Please fill required fields', 'error')
                 return redirect(url_for('auth.register'))
+
+            # Calculate times
+            from datetime import datetime, timedelta
+            start_time = datetime.strptime(start_time_str, "%H:%M")
+            
+            break_start_time = None
+            break_start_str = None
+            
+            if break_after > 0:
+                break_start_time = start_time + timedelta(minutes=break_after * lecture_duration)
+                break_start_str = break_start_time.strftime("%H:%M")
+            
+            total_minutes = num_lectures * lecture_duration
+            if break_after > 0 and break_after < num_lectures:
+                 total_minutes += break_duration
+                 
+            end_time = start_time + timedelta(minutes=total_minutes)
+            end_time_str = end_time.strftime("%H:%M")
 
             hashed_password = generate_password_hash(password)
 
@@ -37,7 +55,7 @@ def register():
                 INSERT INTO schools (school_name, username, password_hash, start_time, end_time, lecture_duration, break_start_time, break_duration)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """
-            cursor.execute(sql, (school_name, username, hashed_password, start_time, end_time, lecture_duration, break_start_time, break_duration))
+            cursor.execute(sql, (school_name, username, hashed_password, start_time_str, end_time_str, lecture_duration, break_start_str, break_duration))
             db.commit()
             db.close()
 

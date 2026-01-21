@@ -18,13 +18,6 @@
             </div>
 
             <div style="margin-bottom: 1rem;">
-                <label for="end_time" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">School End
-                    Time:</label>
-                <input type="time" id="end_time" name="end_time" value="{{ config.end_time }}" required
-                    style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem;">
-            </div>
-
-            <div style="margin-bottom: 1rem;">
                 <label for="lecture_duration" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Lecture
                     Duration (minutes):</label>
                 <input type="number" id="lecture_duration" name="lecture_duration" value="{{ config.lecture_duration }}"
@@ -32,13 +25,21 @@
                     style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem;">
             </div>
 
+            <div style="margin-bottom: 1rem;">
+                <label for="num_lectures" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Number of Lectures per Day:</label>
+                <input type="number" id="num_lectures" name="num_lectures" value="{{ config.num_lectures if config.num_lectures else 6 }}" required
+                    min="1" max="15"
+                    style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem;">
+            </div>
+
             <h3 style="margin-top: 1.5rem; margin-bottom: 1rem; font-size: 1.1rem; color: var(--primary);">Break
                 Configuration</h3>
 
             <div style="margin-bottom: 1rem;">
-                <label for="break_start" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Break Start
-                    Time:</label>
-                <input type="time" id="break_start" name="break_start" value="{{ config.break_start }}"
+                <label for="break_after" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Break After (Number of Lectures):</label>
+                <div style="font-size: 0.85rem; color: #666; margin-bottom: 0.5rem;">Enter 0 for no break</div>
+                <input type="number" id="break_after" name="break_after" value="{{ config.break_after if config.break_after is defined else 3 }}"
+                    min="0" max="15"
                     style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem;">
             </div>
 

@@ -44,20 +44,22 @@
                     <input type="time" id="start_time" name="start_time" required>
                 </div>
                 <div>
-                    <label for="end_time">End Time:</label>
-                    <input type="time" id="end_time" name="end_time" required>
-                </div>
-                <div>
                     <label for="lecture_duration">Lecture Duration (mins):</label>
-                    <input type="number" id="lecture_duration" name="lecture_duration" value="60" required>
+                    <input type="number" id="lecture_duration" name="lecture_duration" value="60" required min="30"
+                        max="180">
                 </div>
                 <div>
-                    <label for="break_start">Break Start Time:</label>
-                    <input type="time" id="break_start" name="break_start">
+                    <label for="num_lectures">Number of Lectures:</label>
+                    <input type="number" id="num_lectures" name="num_lectures" value="6" required min="1" max="15">
+                </div>
+                <div>
+                    <label for="break_after">Break After (Lectures):</label>
+                    <input type="number" id="break_after" name="break_after" value="3" min="0" max="15"
+                        placeholder="0 for no break">
                 </div>
                 <div>
                     <label for="break_duration">Break Duration (mins):</label>
-                    <input type="number" id="break_duration" name="break_duration" value="30">
+                    <input type="number" id="break_duration" name="break_duration" value="30" min="0" max="120">
                 </div>
             </div>
 
