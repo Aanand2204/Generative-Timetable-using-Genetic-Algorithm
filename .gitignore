@@ -5,3 +5,4 @@ Uploading_Docs/
 __pycache__/
 .ipynb_checkpoints/
 .env
+.gitattributes
