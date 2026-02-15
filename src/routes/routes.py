@@ -1,8 +1,8 @@
 
 from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for, flash
 from datetime import datetime, timedelta
-from database import connect_db, fetch_data, get_timetable_by_class
-from algorithms import genetic_algorithm
+from src.database.database import connect_db, fetch_data, get_timetable_by_class
+from src.logic.algorithms import genetic_algorithm
 from functools import wraps
 
 main_bp = Blueprint('main', __name__)

@@ -1,6 +1,6 @@
 
-from routes import perform_timetable_generation
-from database import connect_db
+from src.routes.routes import perform_timetable_generation
+from src.database.database import connect_db
 import logging
 import sys
 
@@ -9,12 +9,12 @@ logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 def reproduce():
     print("--- Starting Reproduction ---")
-    class_name = "FY"
+    class_name = "MSc FY"
     semester = "2" # Testing string vs int issue
     priorities = {
         "ML & AI": 5, "NLP": 4, "DSA": 3, "DAV": 2, "ELECTIVE (BA)": 1, "MINOR PROJECT": 5
     }
-    school_id = 3 # DOT
+    school_id = 1 # SPPU DOT
 
     print(f"Calling perform_timetable_generation with: Class={class_name}, Sem={semester}, School={school_id}")
     

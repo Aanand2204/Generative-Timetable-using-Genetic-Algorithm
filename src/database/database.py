@@ -1,6 +1,6 @@
 
 import mysql.connector
-from config import Config
+from src.logic.config import Config
 from datetime import timedelta
 
 def connect_db():

@@ -1,7 +1,7 @@
 from flask import Flask
-from config import Config
-from routes import main_bp
-from auth import auth_bp
+from src.logic.config import Config
+from src.routes.routes import main_bp
+from src.auth.auth import auth_bp
 
 app = Flask(__name__)
 app.config.from_object(Config)
