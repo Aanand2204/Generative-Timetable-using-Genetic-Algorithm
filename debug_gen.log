@@ -1,7 +1,13 @@
-INFO:root:DEBUG: derived invalid_slots for constraints: {'ML & AI': {('Tuesday', '14:45:00'), ('Monday', '14:45:00'), ('Wednesday', '14:45:00'), ('Saturday', '14:45:00'), ('Thursday', '14:45:00'), ('Friday', '14:45:00')}, 'NLP': {('Tuesday', '14:45:00'), ('Monday', '14:45:00'), ('Wednesday', '14:45:00'), ('Saturday', '14:45:00'), ('Thursday', '14:45:00'), ('Friday', '14:45:00')}, 'ELECTIVE (BA)': {('Tuesday', '14:45:00'), ('Monday', '14:45:00'), ('Wednesday', '14:45:00'), ('Saturday', '14:45:00'), ('Thursday', '14:45:00'), ('Friday', '14:45:00')}, 'DSA': {('Tuesday', '14:45:00'), ('Monday', '14:45:00'), ('Wednesday', '14:45:00'), ('Saturday', '14:45:00'), ('Thursday', '14:45:00'), ('Friday', '14:45:00')}, 'DAV': {('Tuesday', '14:45:00'), ('Monday', '14:45:00'), ('Wednesday', '14:45:00'), ('Saturday', '14:45:00'), ('Thursday', '14:45:00'), ('Friday', '14:45:00')}, 'MINOR PROJECT': {('Tuesday', '14:45:00'), ('Monday', '14:45:00'), ('Wednesday', '14:45:00'), ('Saturday', '14:45:00'), ('Thursday', '14:45:00'), ('Friday', '14:45:00')}}
+INFO:root:DEBUG: derived invalid_slots for constraints: {'ML & AI': {('Saturday', '14:45:00'), ('Wednesday', '14:45:00'), ('Monday', '14:45:00'), ('Tuesday', '14:45:00'), ('Friday', '14:45:00'), ('Thursday', '14:45:00')}, 'NLP': {('Saturday', '14:45:00'), ('Wednesday', '14:45:00'), ('Monday', '14:45:00'), ('Tuesday', '14:45:00'), ('Friday', '14:45:00'), ('Thursday', '14:45:00')}, 'ELECTIVE (BA)': {('Saturday', '14:45:00'), ('Wednesday', '14:45:00'), ('Monday', '14:45:00'), ('Tuesday', '14:45:00'), ('Friday', '14:45:00'), ('Thursday', '14:45:00')}, 'DSA': {('Saturday', '14:45:00'), ('Wednesday', '14:45:00'), ('Monday', '14:45:00'), ('Tuesday', '14:45:00'), ('Friday', '14:45:00'), ('Thursday', '14:45:00')}, 'DAV': {('Saturday', '14:45:00'), ('Wednesday', '14:45:00'), ('Monday', '14:45:00'), ('Tuesday', '14:45:00'), ('Friday', '14:45:00'), ('Thursday', '14:45:00')}, 'MINOR PROJECT': {('Saturday', '14:45:00'), ('Wednesday', '14:45:00'), ('Monday', '14:45:00'), ('Tuesday', '14:45:00'), ('Friday', '14:45:00'), ('Thursday', '14:45:00')}}
 INFO:root:STARTING GENERATION: Class=MSc FY, Sem=2, School=1
 INFO:root:Algorithm produced 24 entries
 INFO:root:DEBUG: Starting DB insertion loop. Total generated entries: 24
-INFO:werkzeug:127.0.0.1 - - [15/Feb/2026 12:28:22] "[32mGET /regenerate_quick HTTP/1.1[0m" 302 -
-INFO:werkzeug:127.0.0.1 - - [15/Feb/2026 12:28:22] "GET /final_timetable HTTP/1.1" 200 -
-INFO:werkzeug:127.0.0.1 - - [15/Feb/2026 12:28:22] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [15/Feb/2026 12:36:33] "POST /generate HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [15/Feb/2026 12:36:33] "GET /final_timetable HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [15/Feb/2026 12:36:33] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [15/Feb/2026 12:36:41] "[32mGET /logout HTTP/1.1[0m" 302 -
+INFO:werkzeug:127.0.0.1 - - [15/Feb/2026 12:36:41] "GET /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [15/Feb/2026 12:36:41] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [15/Feb/2026 12:36:43] "[32mGET /logout HTTP/1.1[0m" 302 -
+INFO:werkzeug:127.0.0.1 - - [15/Feb/2026 12:36:43] "GET /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [15/Feb/2026 12:36:43] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
