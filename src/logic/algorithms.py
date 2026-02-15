@@ -37,29 +37,48 @@ def genetic_algorithm(subjects, timeslots, priorities, credits, invalid_slots=No
             # Sort by time to check for consecutive slots
             entries.sort(key=lambda x: time_idx_map.get(x['timeslot'], 0))
             
-            subject_counts = {}
+            subject_slots = {} # subj -> list of slot indices
             for i in range(len(entries)):
                 entry = entries[i]
                 subj = entry['subject']
-                subject_counts[subj] = subject_counts.get(subj, 0) + 1
+                slot_idx = time_idx_map.get(entry['timeslot'], 0)
+                
+                if subj not in subject_slots:
+                    subject_slots[subj] = []
+                subject_slots[subj].append(slot_idx)
                 
                 # Reward consecutive placement for high priority subjects
                 if i > 0:
                     prev_entry = entries[i-1]
-                    if prev_entry['subject'] == subj and subj in high_priority_subjects:
-                        # Significant bonus for consecutive high-priority lectures
-                        score += 100 * priorities.get(subj, 1)
+                    prev_idx = time_idx_map.get(prev_entry['timeslot'])
+                    
+                    if prev_entry['subject'] == subj and subj in high_priority_subjects and slot_idx == prev_idx + 1:
+                        # Bonus for truly consecutive high-priority lectures
+                        score += 20 * priorities.get(subj, 1)
                 
-                # General priority reward (place high priority subjects anyway)
-                score += priorities.get(subj, 1) * 5
+                # General priority reward
+                score += priorities.get(subj, 1) * 2
 
-            for subj, count in subject_counts.items():
+            # Reward variety: High bonus for number of unique subjects on a day
+            score += len(subject_slots) * 100
+
+            for subj, indices in subject_slots.items():
+                count = len(indices)
                 if count > 2:
-                    # Penalty for too many lectures of the same subject on one day
-                    score -= (count - 2) * 50
+                    # HEAVY penalty for exceeding daily limit
+                    score -= (count - 2) * 500
                 elif count == 2 and subj not in high_priority_subjects:
                     # Minor penalty for non-high priority subjects having 2 lectures
                     score -= 20
+                
+                # 🔹 Penalize if multiple lectures on same day are NOT contiguous
+                if count >= 2:
+                    indices.sort()
+                    if (indices[-1] - indices[0]) != (count - 1):
+                        score -= 100 * count
+                
+                # Reward spreading: Small bonus for each day a subject appears
+                score += 30
                     
         return score
 
@@ -74,10 +93,16 @@ def genetic_algorithm(subjects, timeslots, priorities, credits, invalid_slots=No
         available_slots = all_slots.copy()
         current_credits = credits.copy()
         
-        # 1. Attempt to place consecutive blocks for High Priority subjects
+        # Ensure ML & AI credits are handled as 4
+        if 'ML & AI' in current_credits:
+            current_credits['ML & AI'] = 4
+
         shuffled_high_priority = list(high_priority_subjects)
         random.shuffle(shuffled_high_priority)
         
+        time_idx_map = {t: i for i, t in enumerate(timeslots)} # Ensure time_idx_map is available here
+
+        # 1. Attempt to place ONE consecutive double for High Priority subjects
         for subj in shuffled_high_priority:
             if current_credits.get(subj, 0) < 2:
                 continue
@@ -88,34 +113,32 @@ def genetic_algorithm(subjects, timeslots, priorities, credits, invalid_slots=No
             
             placed_block = False
             for day in shuffled_days:
-                # Find all available slots for this day
-                day_slots_in_pool = [i for i, x in enumerate(available_slots) if x[0] == day]
-                if not day_slots_in_pool:
+                # Find all available slots for this day that are valid
+                day_slots = []
+                for i, (d, t) in enumerate(available_slots):
+                    if d == day and (d, t) not in invalid_slots.get(subj, set()):
+                        day_slots.append({'index': i, 'time': t})
+                
+                if len(day_slots) < 2:
                     continue
                 
-                time_idx_map = {t: i for i, t in enumerate(timeslots)}
-                valid_day_indices = []
-                for idx in day_slots_in_pool:
-                    _, time_val = available_slots[idx]
-                    if (day, time_val) not in invalid_slots.get(subj, set()):
-                        valid_day_indices.append((idx, time_idx_map[time_val]))
-                
-                valid_day_indices.sort(key=lambda x: x[1]) # Sort by time
+                # Sort by time index
+                day_slots.sort(key=lambda x: time_idx_map.get(x['time'], 0))
                 
                 # Find consecutive pair
-                for k in range(len(valid_day_indices) - 1):
-                    idx1, t_ord1 = valid_day_indices[k]
-                    idx2, t_ord2 = valid_day_indices[k+1]
+                for k in range(len(day_slots) - 1):
+                    s1 = day_slots[k]
+                    s2 = day_slots[k+1]
                     
-                    if t_ord2 == t_ord1 + 1:
-                        # Found consecutive!
-                        current_schedule.append({"day": day, "timeslot": timeslots[t_ord1], "subject": subj})
-                        current_schedule.append({"day": day, "timeslot": timeslots[t_ord2], "subject": subj})
+                    if time_idx_map[s1['time']] + 1 == time_idx_map[s2['time']]:
+                        # Found a pair!
+                        current_schedule.append({"day": day, "timeslot": s1['time'], "subject": subj})
+                        current_schedule.append({"day": day, "timeslot": s2['time'], "subject": subj})
                         
-                        # Remove from available (higher index first to keep indices valid)
-                        indices_to_remove = sorted([idx1, idx2], reverse=True)
-                        for r_idx in indices_to_remove:
-                            available_slots.pop(r_idx)
+                        # Remove from available (higher index first)
+                        indices_to_remove = sorted([s1['index'], s2['index']], reverse=True)
+                        available_slots.pop(indices_to_remove[0])
+                        available_slots.pop(indices_to_remove[1])
                         
                         current_credits[subj] -= 2
                         placed_block = True
@@ -137,8 +160,15 @@ def genetic_algorithm(subjects, timeslots, priorities, credits, invalid_slots=No
             assigned = False
             constraints = invalid_slots.get(subj, set())
             
+            # Count existing assignments for this subject on each day
+            subject_day_counts = {}
+            for entry in current_schedule:
+                if entry['subject'] == subj:
+                    subject_day_counts[entry['day']] = subject_day_counts.get(entry['day'], 0) + 1
+
             for i, (day, time) in enumerate(available_slots):
-                if (day, time) not in constraints:
+                # Strict Limit: At most 2 lectures per day
+                if subject_day_counts.get(day, 0) < 2 and (day, time) not in constraints:
                     current_schedule.append({"day": day, "timeslot": time, "subject": subj})
                     available_slots.pop(i)
                     assigned = True

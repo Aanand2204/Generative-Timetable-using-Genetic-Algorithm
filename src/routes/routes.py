@@ -441,8 +441,11 @@ def perform_timetable_generation(class_name, semester, priorities, school_id):
              db.close()
              return None, "Time configuration not found. Please re-login."
 
-        # Generate dynamic timeslots
-        timeslots = get_daily_slots(time_config, include_break=False)
+        # Generate dynamic timeslots including breaks
+        all_slots_with_metadata = get_daily_slots(time_config, include_break=True)
+        # Use simple list of timeslot strings for the algorithm
+        timeslots = [s['time'] for s in all_slots_with_metadata]
+        break_slots = [s['time'] for s in all_slots_with_metadata if s['type'] == 'break']
         
         # 🔹 Sync Timeslots to DB (Ensure they exist and get IDs)
         # We prefer using the dynamic slots generated from config.
@@ -492,11 +495,23 @@ def perform_timetable_generation(class_name, semester, priorities, school_id):
                 teacher_busy_map[r_tid].add((r_day, t_str))
 
         # Now populate invalid_slots for our algorithm
+        days_list = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
         for row in subject_rows:
             subj_name = row['subject_name']
+            
+            if subj_name not in invalid_slots:
+                invalid_slots[subj_name] = set()
+
+            # 1. Add teacher busy slots
             t_id = row['teacher_id']
             if t_id in teacher_busy_map:
-                invalid_slots[subj_name] = teacher_busy_map[t_id]
+                # We use update() to add all elements from the set
+                invalid_slots[subj_name].update(teacher_busy_map[t_id])
+
+            # 2. 🔹 NEW: Add break slots for ALL days to prevent allocation
+            for day in days_list:
+                for b_slot in break_slots:
+                    invalid_slots[subj_name].add((day, b_slot))
 
         # DEBUG LOGGING SETUP
         import logging
