@@ -66,5 +66,3 @@ After running, the server should be available at `http://127.0.0.1:5000`.
 - **Database:** MySQL
 - **Frontend:** HTML/CSS/JavaScript (located in `templates/` and `static/`)
 
-## 📄 License
-Detailed licensing information can be added here.
